@@ -36,8 +36,9 @@ class GameServer
     __on_connect__(_socket)
     {
         console.log("player connected.");
-        _socket.on('handshake', function(_authToken) {
-            this.__authenticate__(_socket, _authToken);
+        _socket.on('handshake', function(_data) {
+            console.log('inspecting handshake');
+            this.__authenticate__(_socket, _data.message);
         }.bind(this));
     }
 
@@ -49,7 +50,7 @@ class GameServer
         const _player = new Player(_socket, _auth[0]);
         const _table = this._tables[_auth[1]];
         _table.connect(_player);
-        _player.socket.emit('handshake', `Server confirmed auth token.`);
+        _player.socket.emit('handshake', {message:'Server confirmed auth token.'});
         console.log('authentication success!');
         /*const _auth = new Authenticator(_authToken, this._tables);
         _auth.authenticate(

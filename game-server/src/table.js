@@ -24,7 +24,7 @@ class Table
 
     connect(_player)
     {
-        console.log(`connecting ${_player.username} to the table.`);
+        console.log(`connecting ${_player.username} to the table. ${_player.socket}`);
         this._players.push(_player);
         this._playerState.push({name:_player.username,state:''});
         _player.table = this;
