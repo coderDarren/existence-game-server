@@ -6,7 +6,7 @@ const app = express();
 const server = require('http').Server(app);
 const io = require('socket.io').listen(server);
 const PORT = process.env.PORT || 8081;
-
+const {filter,findIndex} = require('lodash');
 const GameServer = require('./src/game-server.js')
 const Builder = require('./src/util/builder.js');
 
@@ -23,35 +23,93 @@ const startServer = async function() {
 
 startServer();*/
 
-const players = {};
+const NETWORK_MESSAGE_CONNECT = "connection";
+const NETWORK_MESSAGE_DISCONNECT = "disconnect";
+const NETWORK_MESSAGE_HANDSHAKE = "HANDSHAKE";
+const NETWORK_MESSAGE_PLAYER_DATA = "PLAYER";
+const NETWORK_MESSAGE_PLAYER_LEFT = "PLAYER_LEFT";
+const NETWORK_MESSAGE_PLAYER_JOINED = "PLAYER_JOINED";
+const NETWORK_MESSAGE_CHAT = "CHAT";
+const NETWORK_MESSAGE_INSTANCE = "INSTANCE";
+
+/*
+Player Model
+{
+    name: "",
+    pos: { x:0,y:0,z:0 },
+    rot: { x:0,y:0,z:0 },
+    health: 0,
+    energy: 0
+}
+*/
+
+/*
+Instance Model
+{
+    zoneId: "",
+    instanceId: "",
+    players: {
+        player1: {...player1},
+        player2: {...player2}
+    }
+}
+*/
+var instance = {
+    zoneId: "Startup Zone",
+    instanceId: "1",
+    players: []
+}
+
 server.listen(PORT, () => {
-    io.on('connection', _socket => {
-        console.log(`players ${JSON.stringify(players)}`);
-        _socket.on('handshake', function(_data) {
-            console.log('inspecting handshake');
-            const _playerName = _data.message.split(":")[0];
-            players[_playerName] = `${_playerName}:0:0:0`;
+    setInterval(()=>{
+        if (instance.players.length == 0) return;
+        console.log(JSON.stringify(instance));
+        console.log();
+        io.emit(NETWORK_MESSAGE_INSTANCE, {
+            message:JSON.stringify(instance)
+        });
+    }, 100);
 
-            _socket.broadcast.emit('playerJoined', {
-                message:`<color=#0f0>${_playerName} joined.</color>`,
-                player:JSON.stringify(players[_playerName])
-            });
-            _socket.emit('handshake', {message:`<color=#0f0>Welcome to the server.</color>`});
-            _socket.emit('players', {message:JSON.stringify(players)})
-
-            _socket.on('chat', (_data) => {
-                io.emit('chat', _data);
-            });
-            _socket.on('position', (_data) => {
-                const _info = _data.message.split(':');
-                players[_info[0]] = `${_playerName}:${_info[1]}:${_info[2]}:${_info[3]}`;
-                _socket.broadcast.emit('position', {message:players[_info[0]]});
-                console.log(`${_info[0]} is updating position ${_info[1]},${_info[2]},${_info[3]}`);
+    io.on(NETWORK_MESSAGE_CONNECT, _socket => {
+        //console.log(`players ${JSON.stringify(instance.players)}`);
+        _socket.on(NETWORK_MESSAGE_HANDSHAKE, function(_data) {
+            //console.log(`inspecting handshake: ${_data.message}`);
+            const _playerName = _data.message;
+            instance.players.push({
+                name: _playerName,
+                input: {running:0,strafing:0},
+                pos:{x:0,y:0,z:0},
+                rot:{x:0,y:0,z:0},
+                health:0,
+                energy:0
             });
 
-            _socket.on('disconnect', () => {
-                _socket.broadcast.emit('playerLeft', {message:`<color=#f00>${_playerName} left.</color>`,player:_playerName});
-                delete players[_playerName];
+            _socket.broadcast.emit(NETWORK_MESSAGE_PLAYER_JOINED, {
+                message:JSON.stringify(instance.players.find(_player => {
+                    return _player.name == _playerName
+                }))
+            });
+            _socket.emit(NETWORK_MESSAGE_HANDSHAKE, {message:JSON.stringify(instance)});
+
+            _socket.on(NETWORK_MESSAGE_CHAT, function(_data) {
+                //console.log(`chat: ${JSON.stringify(_data)}`);
+                io.emit(NETWORK_MESSAGE_CHAT, {message:_data.message});
+            });
+
+            _socket.on(NETWORK_MESSAGE_PLAYER_DATA, (_player) => {
+                //console.log(`incoming player data ${JSON.stringify(_player)}`)
+                const _index = findIndex(instance.players, _player => {return _player.name == _playerName});
+                instance.players[_index] = _player;
+                //console.log(`${_player.name} is updating position ${_player.pos.x},${_player.pos.y},${_player.pos.z}`);
+            });
+
+            _socket.on(NETWORK_MESSAGE_DISCONNECT, () => {
+                _socket.broadcast.emit(NETWORK_MESSAGE_PLAYER_LEFT, {
+                    message:JSON.stringify(instance.players.find(_player => {
+                        return _player.name == _playerName
+                    }))
+                });
+                instance.players = filter(instance.players, _player => {return _player.name !== _playerName});
             });
         }.bind(this));
     })
