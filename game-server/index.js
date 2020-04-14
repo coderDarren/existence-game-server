@@ -96,7 +96,11 @@ server.listen(PORT, () => {
                     return _player.name == _playerName
                 }))
             });
-            _socket.emit(NETWORK_MESSAGE_HANDSHAKE, {message:JSON.stringify(instance)});
+
+            const _instanceWithAllPlayers = instance;
+            _instanceWithAllPlayers.players = players;
+            _socket.emit(NETWORK_MESSAGE_HANDSHAKE, {message:JSON.stringify(_instanceWithAllPlayers)});
+            delete _instanceWithAllPlayers;
 
             _socket.on(NETWORK_MESSAGE_CHAT, function(_data) {
                 //console.log(`chat: ${JSON.stringify(_data)}`);
