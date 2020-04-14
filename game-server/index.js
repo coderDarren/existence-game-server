@@ -68,7 +68,7 @@ server.listen(PORT, () => {
         io.emit(NETWORK_MESSAGE_INSTANCE, {
             message:JSON.stringify(instance)
         });
-    }, 100);
+    }, 150);
 
     io.on(NETWORK_MESSAGE_CONNECT, _socket => {
         //console.log(`players ${JSON.stringify(instance.players)}`);
