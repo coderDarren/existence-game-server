@@ -100,7 +100,7 @@ server.listen(PORT, async () => {
         //console.log();
         instance.players = filter(players, _player => {
             const _now = Date.now() / 1000;
-            return _now - _player.timestamp < 2; // only emit if player has not updated for 2 seconds
+            return _now - _player.timestamp < 5; // only emit if player has not updated for 2 seconds
         });
 
         instance.system = systemInfo;
