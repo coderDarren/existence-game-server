@@ -9,6 +9,7 @@ const PORT = process.env.PORT || 8081;
 const {filter,findIndex} = require('lodash');
 const GameServer = require('./src/game-server.js')
 const Builder = require('./src/util/builder.js');
+const sys = require('systeminformation');
 
 /*
 const startServer = async function() {
@@ -32,30 +33,27 @@ const NETWORK_MESSAGE_PLAYER_JOINED = "PLAYER_JOINED";
 const NETWORK_MESSAGE_CHAT = "CHAT";
 const NETWORK_MESSAGE_INSTANCE = "INSTANCE";
 
-/*
-Player Model
-{
-    name: "",
-    pos: { x:0,y:0,z:0 },
-    rot: { x:0,y:0,z:0 },
-    health: 0,
-    energy: 0,
-    timestamp: 123456789 (utc)
-}
-*/
-
-/*
-Instance Model
-{
-    zoneId: "",
-    instanceId: "",
-    players: {
-        player1: {...player1},
-        player2: {...player2}
+var systemInfo = {
+    serverName: "Existence Server",
+    serverVersion: "v0.1",
+    cpu: {
+        manufacturer: "",
+        brand: "",
+        speed: "",
+        numCores: "",
+        numProcessors: "",
+        avgLoad: "",
+        currLoad: ""
+    },
+    mem: {
+        total: "",
+        free: "",
+        used: "",
+        active: ""
     }
-}
-*/
+};
 var instance = {
+    system: systemInfo,
     zoneId: "Startup Zone",
     instanceId: "1",
     players: [] // these represent only active players
@@ -63,16 +61,49 @@ var instance = {
 
 var players = []  // these represent all players
 
-server.listen(PORT, () => {
+const toGBString = function(_val) {
+    return `${Math.round((_val / 1000000000) * 100)/100}GB`;
+}
 
+const toPercentageString = function(_val) {
+    return `${Math.round(_val*100)/100}%`
+}
+
+server.listen(PORT, async () => {
+
+    const _cpuInfo = await sys.cpu();
+    systemInfo.cpu = {
+        manufacturer: _cpuInfo.manufacturer,
+        brand: _cpuInfo.brand,
+        speed: _cpuInfo.speed.toString()+"GHz",
+        numCores: _cpuInfo.cores.toString(),
+        numProcessors: _cpuInfo.processors.toString()
+    }
+
+    // update cpu every 1s
+    setInterval(async ()=>{
+        const _cpuData = await sys.currentLoad();
+        systemInfo.cpu.avgLoad = toPercentageString(_cpuData.avgload);
+        systemInfo.cpu.currLoad = toPercentageString(_cpuData.currentload);
+        const _memData = await sys.mem();
+        systemInfo.mem = {
+            total: toGBString(_memData.total),
+            free: toGBString(_memData.free),
+            used: toGBString(_memData.used),
+            active: toGBString(_memData.active)
+        }
+    }, 1000);
+
+    // update clients every 150ms
     setInterval(()=>{
         if (players.length == 0) return;
-        //console.log(JSON.stringify(instance));
         //console.log();
         instance.players = filter(players, _player => {
             const _now = Date.now() / 1000;
             return _now - _player.timestamp < 2; // only emit if player has not updated for 2 seconds
         });
+
+        instance.system = systemInfo;
 
         io.emit(NETWORK_MESSAGE_INSTANCE, {
             message:JSON.stringify(instance)
