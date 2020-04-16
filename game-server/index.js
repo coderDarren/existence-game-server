@@ -6,7 +6,7 @@ const app = express();
 const server = require('http').Server(app);
 const io = require('socket.io').listen(server);
 const PORT = process.env.PORT || 8081;
-const {filter,findIndex} = require('lodash');
+const {filter,findIndex, meanBy} = require('lodash');
 const GameServer = require('./src/game-server.js')
 const Builder = require('./src/util/builder.js');
 const sys = require('systeminformation');
@@ -52,14 +52,20 @@ var systemInfo = {
         active: ""
     }
 };
+var gameInfo = {
+    playerCount: "0",
+    avgPlayerPacketSize: "",
+    avgServerPacketSize: ""
+}
+
 var instance = {
+    gameInfo: gameInfo,
     system: systemInfo,
-    zoneId: "Startup Zone",
-    instanceId: "1",
     players: [] // these represent only active players
 }
 
 var players = []  // these represent all players
+const emissionMs = 150;
 
 const toGBString = function(_val) {
     return `${Math.round((_val / 1000000000) * 100)/100}GB`;
@@ -80,7 +86,7 @@ server.listen(PORT, async () => {
         numProcessors: _cpuInfo.processors.toString()
     }
 
-    // update cpu every 1s
+    // update stats every 1s
     setInterval(async ()=>{
         const _cpuData = await sys.currentLoad();
         systemInfo.cpu.avgLoad = toPercentageString(_cpuData.avgload);
@@ -100,15 +106,16 @@ server.listen(PORT, async () => {
         //console.log();
         instance.players = filter(players, _player => {
             const _now = Date.now() / 1000;
-            return _now - _player.timestamp < 5; // only emit if player has not updated for 2 seconds
+            return _now - _player.timestamp < 5; // only emit if player has not updated for 5 seconds
         });
 
         instance.system = systemInfo;
+        instance.gameInfo.playerCount = players.length;
 
         io.emit(NETWORK_MESSAGE_INSTANCE, {
             message:JSON.stringify(instance)
         });
-    }, 150);
+    }, emissionMs);
 
     io.on(NETWORK_MESSAGE_CONNECT, _socket => {
         _socket.on(NETWORK_MESSAGE_HANDSHAKE, function(_data) {
