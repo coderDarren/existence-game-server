@@ -1,32 +1,34 @@
+'use strict';
+const NETWORK_MESSAGE_PLAYER_DATA = "PLAYER";
+const NETWORK_MESSAGE_HIT_ENEMY = "HIT_ENEMY";
 
-class Player
-{
-    constructor(_socket, _username)
-    {
-        this._table = null;
-        this._socket = _socket;
-        this._username = _username;
-
-        this.__disconnect__ = this.__disconnect__.bind(this);
-        this.__message__ = this.__message__.bind(this);
-
-        this._socket.on('disconnect', this.__disconnect__);
-        this._socket.on('message', this.__message__);
-    }
-
-    __disconnect__()
-    {
-        this._table.disconnect(this);
-    }
-
-    __message__(_data)
-    {
-        this._table.message(this, _data);
-    }
+class Player {
     
-    set table(_val) { this._table = _val; }
-    get socket() { return this._socket; }
-    get username() { return this._username; }
+    constructor(_game, _data, _socket) {
+        this._game = _game;
+        this._data = _data;
+        this._socket = _socket;
+
+        this.__hook__ = this.__hook__.bind(this);
+
+        this.__hook__();
+    }
+
+    __hook__() {
+        // tell server to update this player
+        this._socket.on(NETWORK_MESSAGE_PLAYER_DATA, function(_player) {
+            this._data = _player;
+            this._game.updatePlayer(this);
+        }.bind(this));
+        
+        this._socket.on(NETWORK_MESSAGE_HIT_ENEMY, function(_enemy) {
+            this._game.onPlayerHitEnemy(this, _enemy);
+        }.bind(this))
+    }
+
+    get data() { return this._data; }
+
+    set data(_val) { this._data = _val; }
 }
 
 module.exports = Player;

@@ -1,3 +1,4 @@
+'use strict';
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
@@ -6,160 +7,16 @@ const app = express();
 const server = require('http').Server(app);
 const io = require('socket.io').listen(server);
 const PORT = process.env.PORT || 8081;
-const {filter,findIndex, meanBy} = require('lodash');
-const GameServer = require('./src/game-server.js')
-const Builder = require('./src/util/builder.js');
-const sys = require('systeminformation');
+const Game = require('./src/game.js')
 
-/*
-const startServer = async function() {
-    console.log('initializing server');
-    await Builder.initializeServer();
-    console.log('successfully initialized server');
-
-    server.listen(PORT, () => {
-        const _game = new GameServer(io, Builder.tableNames);
-    });
-}
-
-startServer();*/
-
-const NETWORK_MESSAGE_CONNECT = "connection";
-const NETWORK_MESSAGE_DISCONNECT = "disconnect";
-const NETWORK_MESSAGE_HANDSHAKE = "HANDSHAKE";
-const NETWORK_MESSAGE_PLAYER_DATA = "PLAYER";
-const NETWORK_MESSAGE_PLAYER_LEFT = "PLAYER_LEFT";
-const NETWORK_MESSAGE_PLAYER_JOINED = "PLAYER_JOINED";
-const NETWORK_MESSAGE_CHAT = "CHAT";
-const NETWORK_MESSAGE_INSTANCE = "INSTANCE";
-
-var systemInfo = {
-    serverName: "Existence Server",
-    serverVersion: "v0.1",
-    cpu: {
-        manufacturer: "",
-        brand: "",
-        speed: "",
-        numCores: "",
-        numProcessors: "",
-        avgLoad: "",
-        currLoad: ""
-    },
-    mem: {
-        total: "",
-        free: "",
-        used: "",
-        active: ""
-    }
-};
-var gameInfo = {
-    playerCount: "0",
-    avgPlayerPacketSize: "",
-    avgServerPacketSize: ""
-}
-
-var instance = {
-    gameInfo: gameInfo,
-    system: systemInfo,
-    players: [] // these represent only active players
-}
-
-var players = []  // these represent all players
 const emissionMs = 150;
-
-const toGBString = function(_val) {
-    return `${Math.round((_val / 1000000000) * 100)/100}GB`;
-}
-
-const toPercentageString = function(_val) {
-    return `${Math.round(_val*100)/100}%`
-}
 
 server.listen(PORT, async () => {
 
-    const _cpuInfo = await sys.cpu();
-    systemInfo.cpu = {
-        manufacturer: _cpuInfo.manufacturer,
-        brand: _cpuInfo.brand,
-        speed: _cpuInfo.speed.toString()+"GHz",
-        numCores: _cpuInfo.cores.toString(),
-        numProcessors: _cpuInfo.processors.toString()
-    }
-
-    // update stats every 1s
-    setInterval(async ()=>{
-        const _cpuData = await sys.currentLoad();
-        systemInfo.cpu.avgLoad = toPercentageString(_cpuData.avgload);
-        systemInfo.cpu.currLoad = toPercentageString(_cpuData.currentload);
-        const _memData = await sys.mem();
-        systemInfo.mem = {
-            total: toGBString(_memData.total),
-            free: toGBString(_memData.free),
-            used: toGBString(_memData.used),
-            active: toGBString(_memData.active)
-        }
-    }, 1000);
+    const game = new Game(io);
 
     // update clients every 150ms
     setInterval(()=>{
-        if (players.length == 0) return;
-        //console.log();
-        instance.players = filter(players, _player => {
-            const _now = Date.now() / 1000;
-            return _now - _player.timestamp < 5; // only emit if player has not updated for 5 seconds
-        });
-
-        instance.system = systemInfo;
-        instance.gameInfo.playerCount = players.length;
-
-        io.emit(NETWORK_MESSAGE_INSTANCE, {
-            message:JSON.stringify(instance)
-        });
+        game.update();
     }, emissionMs);
-
-    io.on(NETWORK_MESSAGE_CONNECT, _socket => {
-        _socket.on(NETWORK_MESSAGE_HANDSHAKE, function(_data) {
-            const _playerName = _data.message;
-            players.push({
-                name: _playerName,
-                input: {running:0,strafing:0},
-                pos:{x:0,y:0,z:0},
-                rot:{x:0,y:0,z:0},
-                health:0,
-                energy:0
-            });
-
-            _socket.broadcast.emit(NETWORK_MESSAGE_PLAYER_JOINED, {
-                message:JSON.stringify(players.find(_player => {
-                    return _player.name == _playerName
-                }))
-            });
-
-            const _instanceWithAllPlayers = instance;
-            _instanceWithAllPlayers.players = players;
-            _socket.emit(NETWORK_MESSAGE_HANDSHAKE, {message:JSON.stringify(_instanceWithAllPlayers)});
-            delete _instanceWithAllPlayers;
-
-            _socket.on(NETWORK_MESSAGE_CHAT, function(_data) {
-                //console.log(`chat: ${JSON.stringify(_data)}`);
-                io.emit(NETWORK_MESSAGE_CHAT, {message:_data.message});
-            });
-
-            _socket.on(NETWORK_MESSAGE_PLAYER_DATA, (_player) => {
-                //console.log(`incoming player data ${JSON.stringify(_player)}`)
-                const _index = findIndex(players, _player => {return _player.name == _playerName});
-                players[_index] = _player;
-                //console.log(`${_player.name} is updating position ${_player.pos.x},${_player.pos.y},${_player.pos.z}`);
-            });
-
-            _socket.on(NETWORK_MESSAGE_DISCONNECT, () => {
-                _socket.broadcast.emit(NETWORK_MESSAGE_PLAYER_LEFT, {
-                    message:JSON.stringify(players.find(_player => {
-                        return _player.name == _playerName
-                    }))
-                });
-                players = filter(players, _player => {return _player.name !== _playerName});
-            });
-        }.bind(this));
-    })
 })

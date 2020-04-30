@@ -21,7 +21,6 @@
     "express": "^4.17.1",
     "lodash": "^4.17.15",
     "socket.io": "^2.3.0",
-    "systeminformation": "^4.23.3",
     "xmlhttprequest": "^1.8.0"
   }
 }
