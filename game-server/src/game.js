@@ -1,5 +1,9 @@
 'use strict';
 const Player = require('./player.js');
+const Mob = require('./mobs/mob.js');
+const {
+    dummy
+} = require('./mobs/data.js');
 const {filter,findIndex, map} = require('lodash');
 
 const NETWORK_MESSAGE_CONNECT = "connection";
@@ -18,6 +22,9 @@ class Game
 
         // use a variable to store all players connected to the game
         this._players = [];
+        this._mobs = [
+            new Mob(this, dummy(10))
+        ]
 
         // use a variable to store all ACTIVE players connected to the game
         this._instance = {
@@ -30,6 +37,7 @@ class Game
         this.__hook_player__ = this.__hook_player__.bind(this);
         // some util functions
         this.__obj_data_map__ = this.__obj_data_map__.bind(this);
+        this.__prune_instance__ = this.__prune_instance__.bind(this);
         // updaters
         this.__update_mobs__ = this.__update_mobs__.bind(this);
 
@@ -37,18 +45,13 @@ class Game
     }
 
     update() {
-        if (this._players.length == 0) return;
-
-        // update players
-        this._instance.players = filter(this._players, _player => {
-            if (!_player) return false;
-            const _now = Date.now() / 1000;
-            return _now - _player.data.timestamp < 5; // only emit if player has not updated for 5 seconds
-        });
-        this._instance.players = this.__obj_data_map__(this._instance.players);
+        //if (this._players.length == 0) return;
 
         // update mobs
         this.__update_mobs__();
+
+        // break down instance into pure data
+        this.__prune_instance__();
 
         // emit instance
         this._io.emit(NETWORK_MESSAGE_INSTANCE, {
@@ -93,9 +96,17 @@ class Game
 
     }
 
+    __prune_instance__() {
+        this._instance.players = filter(this.__obj_data_map__(this._players), _player => {
+            const _now = Date.now() / 1000;
+            return _now - _player.timestamp < 5; // only emit if player has not updated for 5 seconds
+        });
+        this._instance.mobs = this.__obj_data_map__(this._mobs)
+    }
+
     __update_mobs__() {
-        for (var i = 0; i < this._instance.mobs.length; i++) {
-            this._instance.mobs[i].update();
+        for (var i = 0; i < this._mobs.length; i++) {
+            this._mobs[i].update();
         }
     }
 
@@ -116,9 +127,10 @@ class Game
             });
 
             // provide the instance state to only this player
-            const _instanceWithAllPlayers = this._instance;
-            _instanceWithAllPlayers.players = this.__obj_data_map__(this._players);
-            _socket.emit(NETWORK_MESSAGE_HANDSHAKE, {message:JSON.stringify(_instanceWithAllPlayers)});
+            const _completeInstance = this._instance;
+            _completeInstance.players = this.__obj_data_map__(this._players);
+            _completeInstance.mobs = this.__obj_data_map__(this._mobs);
+            _socket.emit(NETWORK_MESSAGE_HANDSHAKE, {message:JSON.stringify(_completeInstance)});
 
             // send chat out to everyone on the server
             _socket.on(NETWORK_MESSAGE_CHAT, function(_data) {

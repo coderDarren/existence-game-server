@@ -39,7 +39,7 @@ class Mob {
     }
 
     __patrol__() {
-
+        this._data.rot.y += 10;
     }
 
     get data() { return this._data; }
