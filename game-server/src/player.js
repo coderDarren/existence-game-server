@@ -1,6 +1,6 @@
 'use strict';
 const NETWORK_MESSAGE_PLAYER_DATA = "PLAYER";
-const NETWORK_MESSAGE_HIT_ENEMY = "HIT_ENEMY";
+const NETWORK_MESSAGE_HIT_MOB = "HIT_MOB";
 
 class Player {
     
@@ -21,8 +21,8 @@ class Player {
             this._game.updatePlayer(this);
         }.bind(this));
         
-        this._socket.on(NETWORK_MESSAGE_HIT_ENEMY, function(_enemy) {
-            this._game.onPlayerHitEnemy(this, _enemy);
+        this._socket.on(NETWORK_MESSAGE_HIT_MOB, function(_mobHitInfo) {
+            this._game.onPlayerHitMob(this, _mobHitInfo);
         }.bind(this))
     }
 

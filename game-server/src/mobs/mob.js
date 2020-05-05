@@ -26,6 +26,13 @@ class Mob {
         }
     }
 
+    hit(_mobHitInfo) {
+        this._data.health -= _mobHitInfo.dmg;
+        if (this._data.health <= 0) {
+            this._data.health = 0;
+        }
+    }
+
     __choose_target__() {
 
     }
@@ -39,7 +46,11 @@ class Mob {
     }
 
     __patrol__() {
-        this._data.rot.y += 10;
+        //this._data.rot.y += 10;
+        this._data.health += this._data.healDelta;
+        if (this._data.health > this._data.maxHealth) {
+            this._data.health = this._data.maxHealth;
+        }
     }
 
     get data() { return this._data; }

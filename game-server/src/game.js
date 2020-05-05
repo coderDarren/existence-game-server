@@ -20,6 +20,10 @@ class Game
     {
         this._io = _io;
 
+        // track deltaTime for updated server systems to share
+        this._lastFrameTime= Date.now();
+        this._dt = Date.now() - this._lastFrameTime;
+
         // use a variable to store all players connected to the game
         this._players = [];
         this._mobs = [
@@ -45,7 +49,8 @@ class Game
     }
 
     update() {
-        //if (this._players.length == 0) return;
+        this._dt = Date.now() - this._lastFrameTime;
+        this._lastFrameTime= Date.now();
 
         // update mobs
         this.__update_mobs__();
@@ -64,14 +69,17 @@ class Game
      */
     updatePlayer(_player) {
         const _index = findIndex(this._players, _p => {return _p.data.name == _player.data.name});
+        if (_index == -1) return;
         this._players[_index] = _player;
     }
 
     /*
      * Called when a player hits an _mob
      */
-    onPlayerHitEnemy(_player, _mob) {
-
+    onPlayerHitMob(_player, _mobHitInfo) {
+        const _index = findIndex(this._mobs, _m => {return _m.data.id == _mobHitInfo.id});
+        if (_index == -1) return;
+        this._mobs[_index].hit(_mobHitInfo);
     }
 
     /*
@@ -153,6 +161,10 @@ class Game
         this._io.on(NETWORK_MESSAGE_CONNECT, _socket => {
             this.__hook_player__(_socket);
         })
+    }
+
+    get deltaTime() {
+        return this._dt;
     }
 }
 
