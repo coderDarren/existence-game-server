@@ -27,7 +27,8 @@ class Game
         // use a variable to store all players connected to the game
         this._players = [];
         this._mobs = [
-            new Mob(this, dummy(10))
+            new Mob(this, dummy(10)),
+            new Mob(this, dummy2(10))
         ]
 
         // use a variable to store all ACTIVE players connected to the game
