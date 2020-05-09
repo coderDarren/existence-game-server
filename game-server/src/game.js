@@ -2,7 +2,8 @@
 const Player = require('./player.js');
 const Mob = require('./mobs/mob.js');
 const {
-    dummy
+    dummy,
+    dummy2
 } = require('./mobs/data.js');
 const {filter,findIndex, map} = require('lodash');
 

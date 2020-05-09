@@ -51,5 +51,6 @@ const dummy2 = function(_level) {
 }
 
 module.exports = {
-    dummy
+    dummy,
+    dummy2
 }
