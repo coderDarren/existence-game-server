@@ -5,6 +5,7 @@ const {
     dummy,
     dummy2
 } = require('./mobs/data.js');
+const API = require('./util/api.js');
 const {filter,findIndex, map} = require('lodash');
 
 const NETWORK_MESSAGE_CONNECT = "connection";
@@ -149,11 +150,21 @@ class Game
 
             // alert all players except this one that this player left
             _socket.on(NETWORK_MESSAGE_DISCONNECT, function() {
+                // locate player
+                const _player = this._players.find(_p => { return _p.data.name == _thisPlayer.data.name; });
+                
+                // emit event to connected clients
                 _socket.broadcast.emit(NETWORK_MESSAGE_PLAYER_LEFT, {
-                    message:JSON.stringify(this._players.find(_player => {
-                        return _player.data.name == _thisPlayer.data.name
-                    }).data)
+                    message:JSON.stringify(_player.data)
                 });
+
+                // update database with last saved position
+                API.savePlayerSessionPos({
+                    ID: _player.sessionId,
+                    posX: _player.data.pos.x, posY: _player.data.pos.y, posZ: _player.data.pos.z,
+                    rotX: _player.data.rot.x, rotY: _player.data.rot.y, rotZ: _player.data.rot.z});
+
+                // remove player from array
                 this._players = filter(this._players, _player => {return _player.data.name !== _thisPlayer.data.name});
             }.bind(this));
         }.bind(this));

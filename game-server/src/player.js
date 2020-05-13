@@ -17,7 +17,7 @@ class Player {
     __hook__() {
         // tell server to update this player
         this._socket.on(NETWORK_MESSAGE_PLAYER_DATA, function(_player) {
-            this._data = _player;
+            this._data.player = _player;
             this._game.updatePlayer(this);
         }.bind(this));
         
@@ -26,9 +26,9 @@ class Player {
         }.bind(this))
     }
 
-    get data() { return this._data; }
-
-    set data(_val) { this._data = _val; }
+    get data() { return this._data.player; }
+    get sessionId() { return this._data.sessionId; }
+    set data(_val) { this._data.player = _val; }
 }
 
 module.exports = Player;
