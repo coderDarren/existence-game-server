@@ -21,7 +21,7 @@ class Mob {
     }
 
     update() {
-        this._targets = this._game.scanNearbyPlayers(this._defaultPos.obj, this._data.aggroRange);
+        this._targets = this._game.scanNearbyPlayers(this._data.pos, this._data.aggroRange);
         const _mobPos = new Vector3(this._data.pos);
         
         if (this._data.inCombat) {
@@ -46,10 +46,12 @@ class Mob {
     }
 
     __choose_target__() {
-        if (this._targets.length == 0) {
+        const _mobPos = new Vector3(this._data.pos);
+        if (this._targets.length == 0 || _mobPos.distanceTo(this._defaultPos) > 50) {
             this._data.inCombat = false;
             return;
         }
+
         this._target = this._targets[0];
     }
 
@@ -75,7 +77,7 @@ class Mob {
 
     __retreat__() {
         const _mobPos = new Vector3(this._data.pos);
-        const _targetPos = new Vector3(this._target.pos);
+        const _targetPos = this._defaultPos;
         const _dir = _mobPos.lookAt(_targetPos);
         this._data.rot.y = _dir.angleTo(Vec3Right);
         this._data.pos = _mobPos.moveToward(this._defaultPos, 3 * this._game.deltaTime).obj;
@@ -83,8 +85,7 @@ class Mob {
     }
 
     __patrol__() {
-        const _mobRot = new Vector3(this._data.rot);
-        this._data.rot = _mobRot.moveToward(this._defaultRot, 25 * this._game.deltaTime).obj;
+        this._data.rot = this._defaultRot.obj;
         if (this._targets.length > 0) {
             this._data.inCombat = true;
         }
