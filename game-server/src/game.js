@@ -7,6 +7,7 @@ const {
 } = require('./mobs/data.js');
 const API = require('./util/api.js');
 const {filter,findIndex, map} = require('lodash');
+const {Vector3} = require('./util/vector.js');
 
 const NETWORK_MESSAGE_CONNECT = "connection";
 const NETWORK_MESSAGE_DISCONNECT = "disconnect";
@@ -31,7 +32,7 @@ class Game
         this._mobs = [
             new Mob(this, dummy(10)),
             new Mob(this, dummy2(10))
-        ]
+        ];
 
         // use a variable to store all ACTIVE players connected to the game
         this._instance = {
@@ -97,7 +98,10 @@ class Game
      * Also used to determine the range where players can see other players
      */
     scanNearbyPlayers(_pos, _radius) {
-
+        return filter(this.__obj_data_map__(this._players), _player => {
+            const _dist = new Vector3(_pos).distanceTo(new Vector3(_player.pos));
+            return _dist < _radius;
+        });
     }
 
     /*
@@ -177,7 +181,7 @@ class Game
     }
 
     get deltaTime() {
-        return this._dt;
+        return this._dt / 1000.0;
     }
 }
 

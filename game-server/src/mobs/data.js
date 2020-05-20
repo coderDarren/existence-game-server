@@ -1,5 +1,6 @@
 'use strict';
 const {v4} = require('uuid');
+const {Vector3} = require('../util/vector.js');
 /*
  * This file contains data for all mobs
  * Each mob can be initialized using the _level paramter..
@@ -18,8 +19,8 @@ const dummy = function(_level) {
         energy: 100*_level,
         attackSpeed: 1.5,
         aggroRange: 10,
-        pos: {x:-10,y:33.1,z:265},
-        rot: {x:0,y:0,z:0},
+        pos: new Vector3({x:184.5,y:35.4,z:179.36}).obj,
+        rot: new Vector3({x:0,y:0,z:0}).obj,
         inCombat: false,
         healDelta: 5,
         // !! TODO
@@ -40,8 +41,8 @@ const dummy2 = function(_level) {
         energy: 100*_level,
         attackSpeed: 1.5,
         aggroRange: 10,
-        pos: {x:-8,y:33.1,z:265},
-        rot: {x:0,y:0,z:0},
+        pos: new Vector3({x:178.8,y:35.4,z:176}).obj,
+        rot: new Vector3({x:0,y:0,z:0}).obj,
         inCombat: false,
         healDelta: 5,
         // !! TODO
