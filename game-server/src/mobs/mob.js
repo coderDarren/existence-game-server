@@ -31,11 +31,11 @@ class Mob {
             this.__attack_target__();
         } else if (!_mobPos.equals(this._defaultPos)) {
             this.__retreat__();
+            this.__heal_over_time__();
         } else {
             this.__patrol__();
+            this.__heal_over_time__();
         }
-
-        this.__heal_over_time__();
     }
 
     hit(_mobHitInfo) {
