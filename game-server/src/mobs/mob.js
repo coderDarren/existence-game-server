@@ -61,6 +61,10 @@ class Mob {
         if (_mobPos.distanceTo(_targetPos) < 1) {
             return;
         }
+
+        // construct path to target
+        // iterate over positions moving to each one in path
+
         this._data.pos = _mobPos.moveToward(_targetPos, 3 * this._game.deltaTime).obj;
     }
 
@@ -81,7 +85,6 @@ class Mob {
         const _dir = _mobPos.lookAt(_targetPos);
         this._data.rot.y = _dir.angleTo(Vec3Right);
         this._data.pos = _mobPos.moveToward(this._defaultPos, 3 * this._game.deltaTime).obj;
-        
     }
 
     __patrol__() {

@@ -1,10 +1,6 @@
 'use strict';
 const Player = require('./player.js');
-const Mob = require('./mobs/mob.js');
-const {
-    dummy,
-    dummy2
-} = require('./mobs/data.js');
+const {GameScene, PathfindingTestScene} = require('./scenes/scenes.js');
 const API = require('./util/api.js');
 const {filter,findIndex, map} = require('lodash');
 const {Vector3} = require('./util/vector.js');
@@ -28,11 +24,9 @@ class Game
         this._dt = Date.now() - this._lastFrameTime;
 
         // use a variable to store all players connected to the game
+        this._scene = PathfindingTestScene(this);
         this._players = [];
-        this._mobs = [
-            new Mob(this, dummy(10)),
-            new Mob(this, dummy2(10))
-        ];
+        this._mobs = this._scene.mobs;
 
         // use a variable to store all ACTIVE players connected to the game
         this._instance = {
