@@ -1,5 +1,6 @@
 'use strict';
 const {Vector3, Vec3Right} = require('../util/vector.js');
+const getPath = require('./pathfinder.js');
 
 class Mob {
 
@@ -63,6 +64,7 @@ class Mob {
         }
 
         // construct path to target
+        const _waypoints = getPath(_mobPos, _targetPos);
         // iterate over positions moving to each one in path
 
         this._data.pos = _mobPos.moveToward(_targetPos, 3 * this._game.deltaTime).obj;
