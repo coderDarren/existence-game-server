@@ -177,6 +177,10 @@ class Game
     get deltaTime() {
         return this._dt / 1000.0;
     }
+
+    get scene() {
+        return this._scene;
+    }
 }
 
 module.exports = Game;

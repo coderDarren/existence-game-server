@@ -22,7 +22,7 @@ class Mob {
     }
 
     update() {
-        this._targets = this._game.scanNearbyPlayers(this._data.pos, this._data.aggroRange);
+        //this._targets = this._game.scanNearbyPlayers(this._data.pos, this._data.aggroRange);
         const _mobPos = new Vector3(this._data.pos);
         
         if (this._data.inCombat) {
@@ -47,6 +47,7 @@ class Mob {
     }
 
     __choose_target__() {
+        this._targets = this._game.scanNearbyPlayers(this._data.pos, this._data.aggroRange+10);
         const _mobPos = new Vector3(this._data.pos);
         if (this._targets.length == 0 || _mobPos.distanceTo(this._defaultPos) > 50) {
             this._data.inCombat = false;
@@ -63,17 +64,21 @@ class Mob {
             return;
         }
 
-        // construct path to target
-        const _waypoints = getPath(_mobPos, _targetPos);
         // iterate over positions moving to each one in path
+        if (_mobPos.equals(this._waypoint)) {
+            //console.log('finding next waypoint');
+            this._waypoints = getPath(this._game.scene.waypointGraph, _mobPos, _targetPos);
+            const _index = this._waypoints.length > 1 ? 1 : 0;
+            this._waypoint = new Vector3(this._waypoints[_index].pos);
+        }
 
-        this._data.pos = _mobPos.moveToward(_targetPos, 3 * this._game.deltaTime).obj;
+        this._data.pos = _mobPos.moveToward(this._waypoint, 3 * this._game.deltaTime).obj;
     }
 
     __lookAt_target__() {
         const _mobPos = new Vector3(this._data.pos);
-        const _targetPos = new Vector3(this._target.pos);
-        const _dir = _mobPos.lookAt(_targetPos);
+        //const _targetPos = new Vector3(this._target.pos);
+        const _dir = _mobPos.lookAt(this._waypoint);
         this._data.rot.y = _dir.angleTo(Vec3Right);
     }
 
@@ -90,8 +95,13 @@ class Mob {
     }
 
     __patrol__() {
+        this._targets = this._game.scanNearbyPlayers(this._data.pos, this._data.aggroRange);
+        const _mobPos = new Vector3(this._data.pos);
         this._data.rot = this._defaultRot.obj;
         if (this._targets.length > 0) {
+            const _targetPos = new Vector3(this._targets[0].pos);
+            this._waypoints = getPath(this._game.scene.waypointGraph, _mobPos, _targetPos);
+            this._waypoint = new Vector3(this._waypoints[0].pos);
             this._data.inCombat = true;
         }
     }

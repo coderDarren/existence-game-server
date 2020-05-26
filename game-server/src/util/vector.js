@@ -140,9 +140,11 @@ class Vector3 {
     }
 }
 
+const Vec3Zero = new Vector3({x:0,y:0,z:0});
 const Vec3Right = new Vector3({x:1,y:0,z:0});
 
 module.exports = {
     Vector3,
+    Vec3Zero,
     Vec3Right
 }
