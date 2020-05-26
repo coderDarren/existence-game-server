@@ -69,7 +69,7 @@ class Mob {
             //console.log('finding next waypoint');
             this._waypoints = getPath(this._game.scene.waypointGraph, _mobPos, _targetPos);
             const _index = this._waypoints.length > 1 ? 1 : 0;
-            this._waypoint = new Vector3(this._waypoints[_index].pos);
+            this._waypoint = this._waypoints[_index];
         }
 
         this._data.pos = _mobPos.moveToward(this._waypoint, 3 * this._game.deltaTime).obj;
@@ -101,7 +101,7 @@ class Mob {
         if (this._targets.length > 0) {
             const _targetPos = new Vector3(this._targets[0].pos);
             this._waypoints = getPath(this._game.scene.waypointGraph, _mobPos, _targetPos);
-            this._waypoint = new Vector3(this._waypoints[0].pos);
+            this._waypoint = this._waypoints[0];
             this._data.inCombat = true;
         }
     }

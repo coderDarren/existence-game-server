@@ -41,7 +41,7 @@ const getPath = function(_waypointGraph, _from, _to) {
     var _waypoints = _graph.waypoints.slice();
     
     var _opened = [];
-    var _path = [];
+    var _path = [_to];
 
     // get the closest point to '_to' in the _waypointGraph
     var _goal = __get_closest_waypoint__(_waypoints, _to);
@@ -106,7 +106,7 @@ const getPath = function(_waypointGraph, _from, _to) {
         }
     }
 
-    if (_curr == null || _curr.id != _to.id) {
+    if (_curr == null || _curr.id != _goal.id) {
         //console.log('Path could not be found: '+JSON.stringify(_curr));
         //return _path;
     } else {
@@ -114,7 +114,7 @@ const getPath = function(_waypointGraph, _from, _to) {
     }
 
     while (_curr != null) {
-        _path.push(_curr);
+        _path.push(new Vector3(_curr.pos));
         //console.log(`pushing ${_curr.id} to path`);
         _curr = __get_waypoint__(_waypoints, _curr.parent);
     }
