@@ -24,7 +24,7 @@ class Game
         this._dt = Date.now() - this._lastFrameTime;
 
         // use a variable to store all players connected to the game
-        this._scene = PathfindingTestScene(this);
+        this._scene = GameScene(this);
         this._players = [];
         this._mobs = this._scene.mobs;
 
