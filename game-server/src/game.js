@@ -31,7 +31,7 @@ class Game
         // use a variable to store all ACTIVE players connected to the game
         this._instance = {
             players: [],
-            mobs: []
+            mobs: this._mobs
         };
 
         // some functions to help hook the server and players to the socket engine
@@ -42,6 +42,7 @@ class Game
         this.__prune_instance__ = this.__prune_instance__.bind(this);
         // updaters
         this.__update_mobs__ = this.__update_mobs__.bind(this);
+        this.__emit_tailored_instance__ = this.__emit_tailored_instance__.bind(this);
 
         this.__hook_server__();
     }
@@ -54,12 +55,18 @@ class Game
         this.__update_mobs__();
 
         // break down instance into pure data
-        this.__prune_instance__();
+        //this.__prune_instance__();
 
         // emit instance
-        this._io.emit(NETWORK_MESSAGE_INSTANCE, {
+        /*this._io.emit(NETWORK_MESSAGE_INSTANCE, {
             message:JSON.stringify(this._instance)
-        });
+        });*/
+
+        this._instance.players = this._players;
+        this._instance.mobs = this._mobs;
+
+        // emit tailored instance for each player
+        this.__emit_tailored_instance__();
     }
 
     /*
@@ -103,6 +110,33 @@ class Game
      */
     scanNearbyMobs(_pos, _radius) {
 
+    }
+
+    /*
+     * Emits a specific instance of nearby players and nearby mobs for each player..
+     * ..based on distance
+     */
+    __emit_tailored_instance__() {
+        const _now = Date.now() / 1000;
+        for (var i in this._instance.players) {
+            const _player = this._instance.players[i];
+            const _playerPos = new Vector3(_player.data.pos);
+            const _nearbyPlayers = filter(this._instance.players, _p => {
+                const _pos = new Vector3(_p.data.pos);
+                return _p.data.name != _player.data.name && _playerPos.distanceTo(_pos) <= 20 && _now - _p.data.timestamp < 5;
+            });
+            const _nearbyMobs = filter(this._instance.mobs, _m => {
+                const _pos = new Vector3(_m.data.pos);
+                return _playerPos.distanceTo(_pos) <= 20;
+            });
+            const _instance = {
+                players: this.__obj_data_map__(_nearbyPlayers),
+                mobs: this.__obj_data_map__(_nearbyMobs)
+            };
+            _player.socket.emit(NETWORK_MESSAGE_INSTANCE, {
+                message: JSON.stringify(_instance)
+            });
+        }
     }
 
     __prune_instance__() {

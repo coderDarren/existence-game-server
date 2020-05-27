@@ -28,6 +28,7 @@ class Player {
 
     get data() { return this._data.player; }
     get sessionId() { return this._data.sessionId; }
+    get socket() { return this._socket; }
     set data(_val) { this._data.player = _val; }
 }
 
