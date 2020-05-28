@@ -123,11 +123,11 @@ class Game
             const _playerPos = new Vector3(_player.data.pos);
             const _nearbyPlayers = filter(this._instance.players, _p => {
                 const _pos = new Vector3(_p.data.pos);
-                return _p.data.name != _player.data.name && _playerPos.distanceTo(_pos) <= 20 && _now - _p.data.timestamp < 5;
+                return _p.data.name != _player.data.name && _playerPos.distanceTo(_pos) <= 50 && _now - _p.data.timestamp < 5;
             });
             const _nearbyMobs = filter(this._instance.mobs, _m => {
                 const _pos = new Vector3(_m.data.pos);
-                return _playerPos.distanceTo(_pos) <= 20;
+                return _playerPos.distanceTo(_pos) <= 50;
             });
             const _instance = {
                 players: this.__obj_data_map__(_nearbyPlayers),
