@@ -28,7 +28,6 @@ class Mob {
         if (this._data.inCombat) {
             this.__choose_target__();
             this.__follow_target__();
-            this.__lookAt_target__();
             this.__attack_target__();
         } else if (!_mobPos.equals(this._defaultPos)) {
             this.__retreat__();
@@ -70,6 +69,7 @@ class Mob {
             this._waypoints = getPath(this._game.scene.waypointGraph, _mobPos, _targetPos);
             const _index = this._waypoints.length > 1 ? 1 : 0;
             this._waypoint = this._waypoints[_index];
+            this.__lookAt_target__();
         }
 
         this._data.pos = _mobPos.moveToward(this._waypoint, 3 * this._game.deltaTime).obj;
@@ -102,6 +102,7 @@ class Mob {
             const _targetPos = new Vector3(this._targets[0].pos);
             this._waypoints = getPath(this._game.scene.waypointGraph, _mobPos, _targetPos);
             this._waypoint = this._waypoints[0];
+            this.__lookAt_target__();
             this._data.inCombat = true;
         }
     }
