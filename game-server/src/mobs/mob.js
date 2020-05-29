@@ -11,6 +11,8 @@ class Mob {
         this._target = null;
         this._defaultPos = new Vector3(this._data.pos);
         this._defaultRot = new Vector3(this._data.rot);
+        this._speedVariance = 2;
+        this._runSpeed = this._data.runSpeed - (this._speedVariance / 2) + Math.random() * this._speedVariance;
 
         this.__choose_target__ = this.__choose_target__.bind(this);
         this.__follow_target__ = this.__follow_target__.bind(this);
@@ -72,7 +74,7 @@ class Mob {
             this.__lookAt_target__();
         }
 
-        this._data.pos = _mobPos.moveToward(this._waypoint, 3 * this._game.deltaTime).obj;
+        this._data.pos = _mobPos.moveToward(this._waypoint, this._runSpeed * this._game.deltaTime).obj;
     }
 
     __lookAt_target__() {

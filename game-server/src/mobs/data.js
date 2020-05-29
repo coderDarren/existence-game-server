@@ -24,6 +24,7 @@ const dummy = function(_level, _pos, _rot) {
         rot: new Vector3(_rot).obj,
         inCombat: false,
         healDelta: 5,
+        runSpeed: 3,
         // !! TODO
         // Create mob actions initializer
         actions: []
