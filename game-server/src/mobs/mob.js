@@ -51,6 +51,9 @@ class Mob {
         this._targets = this._game.scanNearbyPlayers(this._data.pos, this._data.aggroRange+10);
         const _mobPos = new Vector3(this._data.pos);
         if (this._targets.length == 0 || _mobPos.distanceTo(this._defaultPos) > 50) {
+            this._waypoints = getPath(this._game.scene.waypointGraph, _mobPos, this._defaultPos);
+            this._waypoint = this._waypoints[0];
+            this.__lookAt_target__();
             this._data.inCombat = false;
             return;
         }
@@ -67,7 +70,6 @@ class Mob {
 
         // iterate over positions moving to each one in path
         if (_mobPos.equals(this._waypoint)) {
-            //console.log('finding next waypoint');
             this._waypoints = getPath(this._game.scene.waypointGraph, _mobPos, _targetPos);
             const _index = this._waypoints.length > 1 ? 1 : 0;
             this._waypoint = this._waypoints[_index];
@@ -79,7 +81,6 @@ class Mob {
 
     __lookAt_target__() {
         const _mobPos = new Vector3(this._data.pos);
-        //const _targetPos = new Vector3(this._target.pos);
         const _dir = _mobPos.lookAt(this._waypoint);
         this._data.rot.y = _dir.angleTo(Vec3Right);
     }
@@ -91,9 +92,16 @@ class Mob {
     __retreat__() {
         const _mobPos = new Vector3(this._data.pos);
         const _targetPos = this._defaultPos;
-        const _dir = _mobPos.lookAt(_targetPos);
-        this._data.rot.y = _dir.angleTo(Vec3Right);
-        this._data.pos = _mobPos.moveToward(this._defaultPos, 3 * this._game.deltaTime).obj;
+
+        // iterate over positions moving to each one in path
+        if (_mobPos.equals(this._waypoint)) {
+            this._waypoints = getPath(this._game.scene.waypointGraph, _mobPos, _targetPos);
+            const _index = this._waypoints.length > 1 ? 1 : 0;
+            this._waypoint = this._waypoints[_index];
+            this.__lookAt_target__();
+        }
+
+        this._data.pos = _mobPos.moveToward(this._waypoint, this._runSpeed * this._game.deltaTime).obj;
     }
 
     __patrol__() {

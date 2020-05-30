@@ -19,7 +19,7 @@ const dummy = function(_level, _pos, _rot) {
         maxEnergy: 100*_level,
         energy: 100*_level,
         attackSpeed: 1.5,
-        aggroRange: 10,
+        aggroRange: 20,
         pos: new Vector3(_pos).obj,
         rot: new Vector3(_rot).obj,
         inCombat: false,
