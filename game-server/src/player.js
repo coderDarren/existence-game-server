@@ -4,6 +4,9 @@ const API = require('./util/api.js');
 const NETWORK_MESSAGE_PLAYER_DATA = "PLAYER";
 const NETWORK_MESSAGE_HIT_MOB = "HIT_MOB";
 const NETWORK_MESSAGE_INVENTORY_CHANGED = "INVENTORY_CHANGE";
+const NETWORK_MESSAGE_ADD_INVENTORY = "ADD_INVENTORY";
+const NETWORK_MESSAGE_ADD_INVENTORY_SUCCESS = "ADD_INVENTORY_SUCCESS";
+const NETWORK_MESSAGE_ADD_INVENTORY_FAILURE = "ADD_INVENTORY_FAILURE";
 
 class Player {
     
@@ -36,6 +39,19 @@ class Player {
                 playerID: this._data.player.id,
                 slotLoc: _updateInfo.slotLoc,
                 slotID: _updateInfo.slotID
+            });
+        }.bind(this));
+
+        this._socket.on(NETWORK_MESSAGE_ADD_INVENTORY, function(_item) {
+            API.addInventoryItem({
+                id: this._data.account.id,
+                apiKey: this._data.account.apiKey,
+                playerID: this._data.player.id,
+                itemID: _item.id
+            }, _success => {
+                this._socket.emit(NETWORK_MESSAGE_ADD_INVENTORY_SUCCESS, {message:_success.message});
+            }, _failure => {
+                this._socket.emit(NETWORK_MESSAGE_ADD_INVENTORY_FAILURE, {message:_failure.message});
             });
         }.bind(this));
     }
