@@ -1,6 +1,9 @@
 'use strict';
+const API = require('./util/api.js');
+
 const NETWORK_MESSAGE_PLAYER_DATA = "PLAYER";
 const NETWORK_MESSAGE_HIT_MOB = "HIT_MOB";
+const NETWORK_MESSAGE_INVENTORY_CHANGED = "INVENTORY_CHANGE";
 
 class Player {
     
@@ -24,8 +27,19 @@ class Player {
         this._socket.on(NETWORK_MESSAGE_HIT_MOB, function(_mobHitInfo) {
             this._game.onPlayerHitMob(this, _mobHitInfo);
         }.bind(this))
-    }
 
+        this._socket.on(NETWORK_MESSAGE_INVENTORY_CHANGED, function(_updateInfo) {
+            if (!this._data.account) return;
+            API.updateInventoryItemSlot({
+                id: this._data.account.id,
+                apiKey: this._data.account.apiKey,
+                playerID: this._data.player.id,
+                slotLoc: _updateInfo.slotLoc,
+                slotID: _updateInfo.slotID
+            });
+        }.bind(this));
+    }
+    
     get data() { return this._data.player; }
     get sessionId() { return this._data.sessionId; }
     get socket() { return this._socket; }

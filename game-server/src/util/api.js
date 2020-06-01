@@ -9,6 +9,11 @@ class API {
     savePlayerSessionPos(_data) {
         this._rest.postDataWithCallbacks(`${this._apiUrl}updateSessionData`, _data);
     }
+
+    updateInventoryItemSlot(_data) {
+        console.log(`posting data ${JSON.stringify(_data)}`);
+        this._rest.postDataWithCallbacks(`${this._apiUrl}updateInventory`, _data);
+    }
 }
 
 module.exports = new API();
