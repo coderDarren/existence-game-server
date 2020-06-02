@@ -106,6 +106,20 @@ class Game
     }
 
     /*
+     * Mobs will constantly scan for nearby players
+     * Also used to determine the range where players can see other players
+     */
+    scanNearbyPlayerSockets(_pos, _radius) {
+        const _nearbyPlayers = filter(this._players, _player => {
+            const _dist = new Vector3(_pos).distanceTo(new Vector3(_player.data.pos));
+            return _dist < _radius;
+        });
+        return map(_nearbyPlayers, _player => {
+            return _player.socket
+        });
+    }
+
+    /*
      * Used to determine the range when players should see mobs
      */
     scanNearbyMobs(_pos, _radius) {
