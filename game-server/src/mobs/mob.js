@@ -95,7 +95,6 @@ class Mob {
         if (this.__target_is_in_range__() && this._rechargeTimer >= this._data.rechargeSpeed) {
             // build up to attack
             this._attackTimer += this._game.deltaTime;
-            console.log(`attack: ${this._attackTimer}`);
             if (this._attackTimer > this._data.attackSpeed) {
                 // send damage info to all nearby players
                 const _nearbySockets = this._game.scanNearbyPlayerSockets(this._data.pos, 50);

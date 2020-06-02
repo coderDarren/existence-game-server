@@ -12,7 +12,13 @@ module.exports = (_game) => {
         //mobs
         [
             new Mob(_game, dummy(10, {x:184.5,y:35.4,z:179.36}, {x:0,y:0,z:0})),
-            new Mob(_game, dummy(10, {x:178.8,y:35.4,z:176}, {x:0,y:0,z:0}))
+            new Mob(_game, dummy(10, {x:183.9456,y:35.4,z:176}, {x:0,y:0,z:0})),
+            new Mob(_game, dummy(10, {x:178.8,y:35.4,z:187.3968}, {x:0,y:0,z:0})),
+            new Mob(_game, dummy(10, {x:180.9942,y:35.4,z:183.3416}, {x:0,y:0,z:0})),
+            new Mob(_game, dummy(10, {x:174.6174,y:35.4,z:179.8783}, {x:0,y:0,z:0})),
+            new Mob(_game, dummy(10, {x:177.3605,y:35.4,z:186.2355}, {x:0,y:0,z:0})),
+            new Mob(_game, dummy(10, {x:175.7767,y:35.4,z:190.9337}, {x:0,y:0,z:0})),
+            new Mob(_game, dummy(10, {x:171.9313,y:35.4,z:190.482}, {x:0,y:0,z:0}))
         ],
         waypointGraph
     );

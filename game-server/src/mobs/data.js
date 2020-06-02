@@ -12,7 +12,7 @@ const dummy = function(_level, _pos, _rot) {
     
     return {
         id: _id,
-        name: 'Test Dummy',
+        name: 'A-0 Zix',
         level: _level,
         maxHealth: 100*_level,
         health: 100*_level,
