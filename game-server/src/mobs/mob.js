@@ -2,6 +2,7 @@
 const {Vector3, Vec3Right} = require('../util/vector.js');
 const getPath = require('./pathfinder.js');
 
+const NETWORK_MESSAGE_MOB_ATTACK = "MOB_ATTACK";
 const NETWORK_MESSAGE_HIT_PLAYER = "HIT_PLAYER";
 
 class Mob {
@@ -94,6 +95,7 @@ class Mob {
         if (this.__target_is_in_range__() && this._rechargeTimer >= this._data.rechargeSpeed) {
             // build up to attack
             this._attackTimer += this._game.deltaTime;
+            console.log(`attack: ${this._attackTimer}`);
             if (this._attackTimer > this._data.attackSpeed) {
                 // send damage info to all nearby players
                 const _nearbySockets = this._game.scanNearbyPlayerSockets(this._data.pos, 50);
@@ -102,6 +104,7 @@ class Mob {
                     const _socket = _nearbySockets[i];
                     _socket.emit(NETWORK_MESSAGE_HIT_PLAYER, {
                         message: JSON.stringify({
+                            mobId: this._data.id,
                             mobName: this._data.name,
                             playerName: this._target.name,
                             dmg: 5
@@ -116,6 +119,19 @@ class Mob {
         } else if (this._rechargeTimer < this._data.rechargeSpeed) {
             this._attackTimer = 0;
             this._rechargeTimer += this._game.deltaTime;
+
+            if (this._rechargeTimer >= this._data.rechargeSpeed) {
+                // force attack animation
+                const _nearbySockets = this._game.scanNearbyPlayerSockets(this._data.pos, 50);
+                for (i in _nearbySockets) {
+                    const _socket = _nearbySockets[i];
+                    _socket.emit(NETWORK_MESSAGE_MOB_ATTACK, {
+                        message: JSON.stringify({
+                            id: this._data.id,
+                        })
+                    });
+                }
+            }
         }
     }
 

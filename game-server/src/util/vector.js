@@ -90,7 +90,7 @@ class Vector3 {
             _angle += 2 * Math.PI;
         }
         // Don't know why we have to add 90 here..
-        return radToDeg(_angle);
+        return radToDeg(_angle) + 180;
     }
 
     equals(_vec) {
