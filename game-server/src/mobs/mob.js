@@ -106,7 +106,7 @@ class Mob {
                             mobId: this._data.id,
                             mobName: this._data.name,
                             playerName: this._target.name,
-                            dmg: 5
+                            dmg: Math.floor(Math.random()*10)
                         })
                     });
                 }
