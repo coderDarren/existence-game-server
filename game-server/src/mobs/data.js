@@ -1,5 +1,5 @@
 'use strict';
-const {v4} = require('uuid');
+const crypto = require('crypto');
 const {Vector3} = require('../util/vector.js');
 /*
  * This file contains data for all mobs
@@ -8,7 +8,7 @@ const {Vector3} = require('../util/vector.js');
  */
 
 const dummy = function(_level, _pos, _rot) {
-    const _id = v4();
+    const _id = crypto.randomBytes(4).toString('hex');
     
     return {
         id: _id,

@@ -1,5 +1,5 @@
 'use strict';
-const {Vector3, Vec3Right} = require('../util/vector.js');
+const {Vector3, Vec3Right, LowPrecisionSimpleVector3} = require('../util/vector.js');
 const getPath = require('./pathfinder.js');
 
 const NETWORK_MESSAGE_MOB_ATTACK = "MOB_ATTACK";
@@ -190,8 +190,8 @@ class Mob {
         return {
             id: this._data.id,
             name: this._data.name,
-            pos: this._data.pos,
-            rot: this._data.rot,
+            pos: LowPrecisionSimpleVector3(this._data.pos),
+            rot: LowPrecisionSimpleVector3(this._data.rot),
             inCombat: this._data.inCombat,
             inAttackRange: this._data.inAttackRange
         }

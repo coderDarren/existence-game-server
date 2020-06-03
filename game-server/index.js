@@ -9,7 +9,7 @@ const io = require('socket.io').listen(server);
 const PORT = process.env.PORT || 8081;
 const Game = require('./src/game.js')
 
-const emissionMs = 150;
+const emissionMs = 500;
 
 server.listen(PORT, async () => {
 
