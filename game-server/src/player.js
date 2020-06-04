@@ -1,12 +1,18 @@
 'use strict';
 const API = require('./util/api.js');
+const {Vector3, LowPrecisionSimpleVector3} = require('./util/vector.js');
+const {filter} = require('lodash');
 
-const NETWORK_MESSAGE_PLAYER_DATA = "PLAYER";
-const NETWORK_MESSAGE_HIT_MOB = "HIT_MOB";
-const NETWORK_MESSAGE_INVENTORY_CHANGED = "INVENTORY_CHANGE";
-const NETWORK_MESSAGE_ADD_INVENTORY = "ADD_INVENTORY";
-const NETWORK_MESSAGE_ADD_INVENTORY_SUCCESS = "ADD_INVENTORY_SUCCESS";
-const NETWORK_MESSAGE_ADD_INVENTORY_FAILURE = "ADD_INVENTORY_FAILURE";
+const NETMSG_PLAYER_DATA = "PLAYER";
+const NETMSG_HIT_MOB = "HIT_MOB";
+const NETMSG_INVENTORY_CHANGED = "INVENTORY_CHANGE";
+const NETMSG_ADD_INVENTORY = "ADD_INVENTORY";
+const NETMSG_ADD_INVENTORY_SUCCESS = "ADD_INVENTORY_SUCCESS";
+const NETMSG_ADD_INVENTORY_FAILURE = "ADD_INVENTORY_FAILURE";
+const NETMSG_MOB_SPAWN = "MOB_SPAWN";
+const NETMSG_MOB_EXIT = "MOB_EXIT";
+const NETMSG_PLAYER_SPAWN = "PLAYER_SPAWN";
+const NETMSG_PLAYER_EXIT = "PLAYER_EXIT";
 
 class Player {
     
@@ -14,24 +20,125 @@ class Player {
         this._game = _game;
         this._data = _data;
         this._socket = _socket;
+        this._nearbyMobs = [];
+        this._nearbyMobsState = {};
+        this._nearbyPlayers = [];
+        this._nearbyPlayersState = {};
+
+        // these values help us determine if the player is stationary or not
+        this._lastFramePos = this._data.player.pos;
+        this._lastFrameRot = this._data.player.rot;
+        this._posChange = 0;
+        this._rotChange = 0;
 
         this.__hook__ = this.__hook__.bind(this);
+        this.__handle_nearby_objects__ = this.__handle_nearby_objects__.bind(this);
+        this.__on_mob_spawn__ = this.__on_mob_spawn__.bind(this);
+        this.__on_mob_exit__ = this.__on_mob_exit__.bind(this);
+        this.__on_player_spawn__ = this.__on_player_spawn__.bind(this);
+        this.__on_player_exit__ = this.__on_player_exit__.bind(this);
+        this.__detect_stationary__ = this.__detect_stationary__.bind(this);
 
         this.__hook__();
     }
 
+    update() {
+        this.__detect_stationary__();
+        this._nearbyMobs = this.__handle_nearby_objects__(this._nearbyMobs, this._nearbyMobsState, this._game.mobs, 50, this.__on_mob_spawn__, this.__on_mob_exit__);
+        this._nearbyPlayers = this.__handle_nearby_objects__(this._nearbyPlayers, this._nearbyPlayersState, this._game.players, 50, this.__on_player_spawn__, this.__on_player_exit__);
+    }
+
+    __detect_stationary__() {
+        this._posChange = new Vector3(this._data.player.pos).distanceTo(new Vector3(this._lastFramePos));
+        this._rotChange = new Vector3(this._data.player.rot).distanceTo(new Vector3(this._lastFrameRot));
+        this._lastFramePos = this._data.player.pos;
+        this._lastFrameRot = this._data.player.rot;
+    }
+
+    __handle_nearby_objects__(_output, _state, _objects, _range, _evt_on_spawn_, _evt_on_exit_) {
+        // clear the state
+        Object.keys(_state).forEach((_key, _index) => {
+            _state[_key] = false;
+        });
+
+        // update the state
+        const _playerPos = new Vector3(this._data.player.pos);
+        _output = filter(_objects, function(_o) {
+            // do not send player data back to himself
+            if (_o.data.id == this._data.player.id) {
+                return false;
+            }
+
+            const _pos = new Vector3(_o.data.pos);
+
+            // compare the distance of the player to the object
+            if (_playerPos.distanceTo(_pos) <= _range) {
+
+                // if within range, check to see if this object has been spawned yet
+                if (_state[_o.data.id] == undefined) { // object has not been spawned
+                    // send spawn event
+                    _evt_on_spawn_(_o);
+                }
+
+                // update the object state
+                _state[_o.data.id] = true;
+
+                // do not send object data that is not moving
+                if (_o.isStationary) {
+                    return false;
+                }
+
+                // include this object in the nearbyMobs array for this frame
+                return true;
+            }
+
+            // exclude this object from the nearbyMobs array for this frame
+            return false;
+
+        }.bind(this));
+
+        // handle exits
+        Object.keys(_state).forEach((_key, _index) => {
+            // if the state is false at this point, that means the object..
+            // ..was in range last frame, but not in range during this frame
+            if (_state[_key] == false) {
+                // send exit event
+                _evt_on_exit_(_key);
+                delete _state[_key];
+            }
+        });
+
+        return _output;
+    }
+
+    __on_mob_spawn__(_mob) {
+        this._socket.emit(NETMSG_MOB_SPAWN, {message:JSON.stringify(_mob.spawnData)});
+    }
+
+    __on_mob_exit__(_mobId) {
+        this._socket.emit(NETMSG_MOB_EXIT, {message:_mobId});
+    }
+
+    __on_player_spawn__(_player) {
+        this._socket.emit(NETMSG_PLAYER_SPAWN, {message:JSON.stringify(_player.data)});
+    }
+
+    __on_player_exit__(_playerName) {
+        this._socket.emit(NETMSG_PLAYER_EXIT, {message:_playerName});
+    }
+
     __hook__() {
         // tell server to update this player
-        this._socket.on(NETWORK_MESSAGE_PLAYER_DATA, function(_player) {
+        this._socket.on(NETMSG_PLAYER_DATA, function(_player) {
             this._data.player = _player;
             this._game.updatePlayer(this);
         }.bind(this));
         
-        this._socket.on(NETWORK_MESSAGE_HIT_MOB, function(_mobHitInfo) {
+        this._socket.on(NETMSG_HIT_MOB, function(_mobHitInfo) {
             this._game.onPlayerHitMob(this, _mobHitInfo);
         }.bind(this))
 
-        this._socket.on(NETWORK_MESSAGE_INVENTORY_CHANGED, function(_updateInfo) {
+        this._socket.on(NETMSG_INVENTORY_CHANGED, function(_updateInfo) {
             if (!this._data.account) return;
             API.updateInventoryItemSlot({
                 id: this._data.account.id,
@@ -42,16 +149,16 @@ class Player {
             });
         }.bind(this));
 
-        this._socket.on(NETWORK_MESSAGE_ADD_INVENTORY, function(_item) {
+        this._socket.on(NETMSG_ADD_INVENTORY, function(_item) {
             API.addInventoryItem({
                 id: this._data.account.id,
                 apiKey: this._data.account.apiKey,
                 playerID: this._data.player.id,
                 itemID: _item.id
             }, _success => {
-                this._socket.emit(NETWORK_MESSAGE_ADD_INVENTORY_SUCCESS, {message:_success.message});
+                this._socket.emit(NETMSG_ADD_INVENTORY_SUCCESS, {message:_success.message});
             }, _failure => {
-                this._socket.emit(NETWORK_MESSAGE_ADD_INVENTORY_FAILURE, {message:_failure.message});
+                this._socket.emit(NETMSG_ADD_INVENTORY_FAILURE, {message:_failure.message});
             });
         }.bind(this));
     }
@@ -59,6 +166,11 @@ class Player {
     get data() { return this._data.player; }
     get sessionId() { return this._data.sessionId; }
     get socket() { return this._socket; }
+    get nearbyMobs() { return this._nearbyMobs; }
+    get nearbyPlayers() { return this._nearbyPlayers; }
+    get isStationary() {
+        return this._posChange == 0 && this._rotChange == 0;
+    }
     set data(_val) { this._data.player = _val; }
 }
 

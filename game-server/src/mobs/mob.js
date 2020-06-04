@@ -2,8 +2,11 @@
 const {Vector3, Vec3Right, LowPrecisionSimpleVector3} = require('../util/vector.js');
 const getPath = require('./pathfinder.js');
 
-const NETWORK_MESSAGE_MOB_ATTACK = "MOB_ATTACK";
-const NETWORK_MESSAGE_HIT_PLAYER = "HIT_PLAYER";
+const NETMSG_MOB_ATTACK_START = "MOB_ATTACK_START";
+const NETMSG_MOB_ATTACK = "MOB_ATTACK";
+const NETMSG_MOB_HIT_PLAYER = "MOB_HIT_PLAYER";
+const NETMSG_MOB_COMBAT_STATE_CHANGE = "MOB_COMBAT_STATE_CHANGE";
+const NETMSG_MOB_ATTACK_RANGE_CHANGE = "MOB_ATTACK_RANGE_STATE_CHANGE";
 
 class Mob {
 
@@ -19,6 +22,12 @@ class Mob {
         this._attackTimer = 0;
         this._rechargeTimer = 0;
 
+        // these values help us determine if the mob is stationary or not
+        this._lastFramePos = this._data.pos;
+        this._lastFrameRot = this._data.rot;
+        this._posChange = 0;
+        this._rotChange = 0;
+
         this.__choose_target__ = this.__choose_target__.bind(this);
         this.__follow_target__ = this.__follow_target__.bind(this);
         this.__lookAt_target__ = this.__lookAt_target__.bind(this);
@@ -27,9 +36,14 @@ class Mob {
         this.__patrol__ = this.__patrol__.bind(this);
         this.__retreat__ = this.__retreat__.bind(this);
         this.__heal_over_time__ = this.__heal_over_time__.bind(this);
+        this.__send_message_to_nearby_players__ = this.__send_message_to_nearby_players__.bind(this);
+        this.__on_attack_range_state_change__ = this.__on_attack_range_state_change__.bind(this);
+        this.__on_combat_state_change__ = this.__on_combat_state_change__.bind(this);
+        this.__detect_stationary__ = this.__detect_stationary__.bind(this);
     }
 
     update() {
+        this.__detect_stationary__();
         const _mobPos = new Vector3(this._data.pos);
         
         if (this._data.inCombat) {
@@ -43,6 +57,13 @@ class Mob {
             this.__patrol__();
             this.__heal_over_time__();
         }
+    }
+
+    __detect_stationary__() {
+        this._posChange = new Vector3(this._data.pos).distanceTo(new Vector3(this._lastFramePos));
+        this._rotChange = new Vector3(this._data.rot).distanceTo(new Vector3(this._lastFrameRot));
+        this._lastFramePos = this._data.pos;
+        this._lastFrameRot = this._data.rot;
     }
 
     hit(_mobHitInfo) {
@@ -60,6 +81,7 @@ class Mob {
             this._waypoint = this._waypoints[0];
             this.__lookAt_target__();
             this._data.inCombat = false;
+            this.__on_combat_state_change__();
             return;
         }
 
@@ -97,19 +119,7 @@ class Mob {
             this._attackTimer += this._game.deltaTime;
             if (this._attackTimer > this._data.attackSpeed) {
                 // send damage info to all nearby players
-                const _nearbySockets = this._game.scanNearbyPlayerSockets(this._data.pos, 50);
-                
-                for (i in _nearbySockets) {
-                    const _socket = _nearbySockets[i];
-                    _socket.emit(NETWORK_MESSAGE_HIT_PLAYER, {
-                        message: JSON.stringify({
-                            mobId: this._data.id,
-                            mobName: this._data.name,
-                            playerName: this._target.name,
-                            dmg: Math.floor(Math.random()*10)
-                        })
-                    });
-                }
+                this.__on_hit_player__(this._target.name, Math.floor((Math.random()+1)*10));
 
                 // reset timers
                 this._attackTimer = 0;
@@ -121,21 +131,12 @@ class Mob {
 
             if (this._rechargeTimer >= this._data.rechargeSpeed) {
                 // force attack animation
-                const _nearbySockets = this._game.scanNearbyPlayerSockets(this._data.pos, 50);
-                for (i in _nearbySockets) {
-                    const _socket = _nearbySockets[i];
-                    _socket.emit(NETWORK_MESSAGE_MOB_ATTACK, {
-                        message: JSON.stringify({
-                            id: this._data.id,
-                        })
-                    });
-                }
+                this.__on_attack__();
             }
         }
     }
 
     __target_is_in_range__() {
-        this._data.inAttackRange = false;
         if (this._target == null) {
             return false;
         }
@@ -143,8 +144,12 @@ class Mob {
         const _mobPos = new Vector3(this._data.pos);
         const _targetPos = new Vector3(this._target.pos);
         const _dist = _mobPos.distanceTo(_targetPos);
-        if (_dist <= this._data.attackRange) {
+        if (_dist <= this._data.attackRange && !this._data.inAttackRange) {
             this._data.inAttackRange = true;
+            this.__on_attack_range_state_change__();
+        } else if (_dist > this._data.attackRange && this._data.inAttackRange) {
+            this._data.inAttackRange = false;
+            this.__on_attack_range_state_change__();
         }
 
         return this._data.inAttackRange;
@@ -174,8 +179,10 @@ class Mob {
             this._waypoints = getPath(this._game.scene.waypointGraph, _mobPos, _targetPos);
             this._waypoint = this._waypoints[0];
             this.__lookAt_target__();
-            this._data.inCombat = true;
             this._rechargeTimer = this._data.rechargeSpeed;
+            this._data.inCombat = true;
+            this.__on_combat_state_change__();
+            this.__on_attack_start__(this._targets[0].name);
         }
     }
 
@@ -186,15 +193,78 @@ class Mob {
         }
     }
 
-    get data() { 
+    __on_attack__() {
+        this.__send_message_to_nearby_players__(NETMSG_MOB_ATTACK, {
+            id: this._data.id,
+        });
+    }
+
+    __on_attack_start__(_player) {
+        this.__send_message_to_nearby_players__(NETMSG_MOB_ATTACK_START, {
+            mobName: this._data.name,
+            playerName: _player,
+        });
+    }
+
+    __on_hit_player__(_player, _dmg) {
+        this.__send_message_to_nearby_players__(NETMSG_MOB_HIT_PLAYER, {
+            mobId: this._data.id,
+            mobName: this._data.name,
+            playerName: _player,
+            dmg: _dmg
+        });
+    }
+
+    __on_attack_range_state_change__() {
+        this.__send_message_to_nearby_players__(NETMSG_MOB_ATTACK_RANGE_CHANGE, {
+            id: this._data.id,
+            inAttackRange: this._data.inAttackRange
+        });
+    }
+
+    __on_combat_state_change__() {
+        this.__send_message_to_nearby_players__(NETMSG_MOB_COMBAT_STATE_CHANGE, {
+            id: this._data.id,
+            inCombat: this._data.inCombat
+        });
+    }
+
+    __send_message_to_nearby_players__(_evt, _msg) {
+        const _nearbySockets = this._game.scanNearbyPlayerSockets(this._data.pos, 50);
+        for (i in _nearbySockets) {
+            const _socket = _nearbySockets[i];
+            _socket.emit(_evt, {
+                message: JSON.stringify(_msg)
+            });
+        }
+    }
+
+    get spawnData() { 
         return {
             id: this._data.id,
             name: this._data.name,
+            level: this._data.level,
+            maxHealth: this._data.maxHealth,
+            health: this._data.health,
+            maxEnergy: this._data.maxEnergy,
+            energy: this._data.energy,
             pos: LowPrecisionSimpleVector3(this._data.pos),
             rot: LowPrecisionSimpleVector3(this._data.rot),
             inCombat: this._data.inCombat,
             inAttackRange: this._data.inAttackRange
         }
+    }
+
+    get data() {
+        return {
+            id: this._data.id,
+            pos: LowPrecisionSimpleVector3(this._data.pos),
+            rot: LowPrecisionSimpleVector3(this._data.rot),
+        }
+    }
+
+    get isStationary() {
+        return this._posChange == 0 && this._rotChange == 0;
     }
 }
 

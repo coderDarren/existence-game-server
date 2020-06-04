@@ -5,13 +5,13 @@ const API = require('./util/api.js');
 const {filter,findIndex, map} = require('lodash');
 const {Vector3} = require('./util/vector.js');
 
-const NETWORK_MESSAGE_CONNECT = "connection";
-const NETWORK_MESSAGE_DISCONNECT = "disconnect";
-const NETWORK_MESSAGE_HANDSHAKE = "HANDSHAKE";
-const NETWORK_MESSAGE_PLAYER_LEFT = "PLAYER_LEFT";
-const NETWORK_MESSAGE_PLAYER_JOINED = "PLAYER_JOINED";
-const NETWORK_MESSAGE_CHAT = "CHAT";
-const NETWORK_MESSAGE_INSTANCE = "INSTANCE";
+const NETMSG_CONNECT = "connection";
+const NETMSG_DISCONNECT = "disconnect";
+const NETMSG_HANDSHAKE = "HANDSHAKE";
+const NETMSG_PLAYER_LEFT = "PLAYER_LEFT";
+const NETMSG_PLAYER_JOINED = "PLAYER_JOINED";
+const NETMSG_CHAT = "CHAT";
+const NETMSG_INSTANCE = "INSTANCE";
 
 class Game
 {
@@ -42,6 +42,7 @@ class Game
         this.__prune_instance__ = this.__prune_instance__.bind(this);
         // updaters
         this.__update_mobs__ = this.__update_mobs__.bind(this);
+        this.__update_players__ = this.__update_players__.bind(this);
         this.__emit_tailored_instance__ = this.__emit_tailored_instance__.bind(this);
 
         this.__hook_server__();
@@ -51,19 +52,12 @@ class Game
         this._dt = Date.now() - this._lastFrameTime;
         this._lastFrameTime= Date.now();
 
-        // update mobs
-        this.__update_mobs__();
-
-        // break down instance into pure data
-        //this.__prune_instance__();
-
-        // emit instance
-        /*this._io.emit(NETWORK_MESSAGE_INSTANCE, {
-            message:JSON.stringify(this._instance)
-        });*/
-
         this._instance.players = this._players;
         this._instance.mobs = this._mobs;
+
+        // update entities
+        this.__update_players__();
+        this.__update_mobs__();
 
         // emit tailored instance for each player
         this.__emit_tailored_instance__();
@@ -85,13 +79,6 @@ class Game
         const _index = findIndex(this._mobs, _m => {return _m.data.id == _mobHitInfo.id});
         if (_index == -1) return;
         this._mobs[_index].hit(_mobHitInfo);
-    }
-
-    /*
-     * Called when a mob hits a player
-     */
-    onMobHitPlayer(_mob, _player, _dmg) {
-
     }
 
     /*
@@ -120,34 +107,20 @@ class Game
     }
 
     /*
-     * Used to determine the range when players should see mobs
-     */
-    scanNearbyMobs(_pos, _radius) {
-
-    }
-
-    /*
      * Emits a specific instance of nearby players and nearby mobs for each player..
      * ..based on distance
      */
     __emit_tailored_instance__() {
-        const _now = Date.now() / 1000;
         for (var i in this._instance.players) {
+
             const _player = this._instance.players[i];
-            const _playerPos = new Vector3(_player.data.pos);
-            const _nearbyPlayers = filter(this._instance.players, _p => {
-                const _pos = new Vector3(_p.data.pos);
-                return _p.data.name != _player.data.name && _playerPos.distanceTo(_pos) <= 50 && _now - _p.data.timestamp < 5;
-            });
-            const _nearbyMobs = filter(this._instance.mobs, _m => {
-                const _pos = new Vector3(_m.data.pos);
-                return _playerPos.distanceTo(_pos) <= 50;
-            });
+            
             const _instance = {
-                players: this.__obj_data_map__(_nearbyPlayers),
-                mobs: this.__obj_data_map__(_nearbyMobs)
+                players: this.__obj_data_map__(_player.nearbyPlayers),
+                mobs: this.__obj_data_map__(_player.nearbyMobs)
             };
-            _player.socket.emit(NETWORK_MESSAGE_INSTANCE, {
+
+            _player.socket.emit(NETMSG_INSTANCE, {
                 message: JSON.stringify(_instance)
             });
         }
@@ -167,17 +140,23 @@ class Game
         }
     }
 
+    __update_players__() {
+        for (var i = 0; i < this._players.length; i++) {
+            this._players[i].update();
+        }
+    }
+
     __obj_data_map__(_objects) {
         return map(_objects, _obj => _obj.data);
     }
 
     __hook_player__(_socket) {
-        _socket.on(NETWORK_MESSAGE_HANDSHAKE, function(_data) {
+        _socket.on(NETMSG_HANDSHAKE, function(_data) {
             const _thisPlayer = new Player(this, _data, _socket);
             this._players.push(_thisPlayer);
 
             // alert all players except this one that this player joined
-            _socket.broadcast.emit(NETWORK_MESSAGE_PLAYER_JOINED, {
+            _socket.broadcast.emit(NETMSG_PLAYER_JOINED, {
                 message:JSON.stringify(this._players.find(_player => {
                     return _player.data.name == _thisPlayer.data.name
                 }).data)
@@ -187,20 +166,20 @@ class Game
             const _completeInstance = this._instance;
             _completeInstance.players = this.__obj_data_map__(this._players);
             _completeInstance.mobs = this.__obj_data_map__(this._mobs);
-            _socket.emit(NETWORK_MESSAGE_HANDSHAKE, {message:JSON.stringify(_completeInstance)});
+            _socket.emit(NETMSG_HANDSHAKE, {message:JSON.stringify(_completeInstance)});
 
             // send chat out to everyone on the server
-            _socket.on(NETWORK_MESSAGE_CHAT, function(_data) {
-                this._io.emit(NETWORK_MESSAGE_CHAT, {message:_data.message});
+            _socket.on(NETMSG_CHAT, function(_data) {
+                this._io.emit(NETMSG_CHAT, {message:_data.message});
             }.bind(this));
 
             // alert all players except this one that this player left
-            _socket.on(NETWORK_MESSAGE_DISCONNECT, function() {
+            _socket.on(NETMSG_DISCONNECT, function() {
                 // locate player
                 const _player = this._players.find(_p => { return _p.data.name == _thisPlayer.data.name; });
                 
                 // emit event to connected clients
-                _socket.broadcast.emit(NETWORK_MESSAGE_PLAYER_LEFT, {
+                _socket.broadcast.emit(NETMSG_PLAYER_LEFT, {
                     message:JSON.stringify(_player.data)
                 });
 
@@ -217,7 +196,7 @@ class Game
     }
 
     __hook_server__() {
-        this._io.on(NETWORK_MESSAGE_CONNECT, _socket => {
+        this._io.on(NETMSG_CONNECT, _socket => {
             this.__hook_player__(_socket);
         })
     }
@@ -228,6 +207,14 @@ class Game
 
     get scene() {
         return this._scene;
+    }
+
+    get mobs() {
+        return this._instance.mobs;
+    }
+
+    get players() {
+        return this._instance.players;
     }
 }
 
