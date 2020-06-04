@@ -13,6 +13,7 @@ const NETMSG_MOB_SPAWN = "MOB_SPAWN";
 const NETMSG_MOB_EXIT = "MOB_EXIT";
 const NETMSG_PLAYER_SPAWN = "PLAYER_SPAWN";
 const NETMSG_PLAYER_EXIT = "PLAYER_EXIT";
+const NETMSG_PLAYER_HIT_MOB_CONFIRMATION = "PLAYER_HIT_MOB_CONFIRMATION";
 
 class Player {
     
@@ -136,6 +137,10 @@ class Player {
         
         this._socket.on(NETMSG_HIT_MOB, function(_mobHitInfo) {
             this._game.onPlayerHitMob(this, _mobHitInfo);
+            _mobHitInfo.playerName = this._data.player.name;
+            this._socket.emit(NETMSG_PLAYER_HIT_MOB_CONFIRMATION, {
+                message: JSON.stringify(_mobHitInfo)
+            });
         }.bind(this))
 
         this._socket.on(NETMSG_INVENTORY_CHANGED, function(_updateInfo) {

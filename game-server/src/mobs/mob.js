@@ -7,6 +7,7 @@ const NETMSG_MOB_ATTACK = "MOB_ATTACK";
 const NETMSG_MOB_HIT_PLAYER = "MOB_HIT_PLAYER";
 const NETMSG_MOB_COMBAT_STATE_CHANGE = "MOB_COMBAT_STATE_CHANGE";
 const NETMSG_MOB_ATTACK_RANGE_CHANGE = "MOB_ATTACK_RANGE_STATE_CHANGE";
+const NETMSG_MOB_HEALTH_CHANGE = "MOB_HEALTH_CHANGE";
 
 class Mob {
 
@@ -28,6 +29,7 @@ class Mob {
         this._posChange = 0;
         this._rotChange = 0;
 
+        this.__detect_stationary__ = this.__detect_stationary__.bind(this);
         this.__choose_target__ = this.__choose_target__.bind(this);
         this.__follow_target__ = this.__follow_target__.bind(this);
         this.__lookAt_target__ = this.__lookAt_target__.bind(this);
@@ -39,7 +41,7 @@ class Mob {
         this.__send_message_to_nearby_players__ = this.__send_message_to_nearby_players__.bind(this);
         this.__on_attack_range_state_change__ = this.__on_attack_range_state_change__.bind(this);
         this.__on_combat_state_change__ = this.__on_combat_state_change__.bind(this);
-        this.__detect_stationary__ = this.__detect_stationary__.bind(this);
+        this.__on_health_change__ = this.__on_health_change__.bind(this);
     }
 
     update() {
@@ -71,6 +73,7 @@ class Mob {
         if (this._data.health <= 0) {
             this._data.health = 0;
         }
+        this.__on_health_change__();
     }
 
     __choose_target__() {
@@ -190,6 +193,8 @@ class Mob {
         this._data.health += this._data.healDelta;
         if (this._data.health > this._data.maxHealth) {
             this._data.health = this._data.maxHealth;
+        } else {
+            this.__on_health_change__();
         }
     }
 
@@ -226,6 +231,13 @@ class Mob {
         this.__send_message_to_nearby_players__(NETMSG_MOB_COMBAT_STATE_CHANGE, {
             id: this._data.id,
             inCombat: this._data.inCombat
+        });
+    }
+
+    __on_health_change__() {
+        this.__send_message_to_nearby_players__(NETMSG_MOB_HEALTH_CHANGE, {
+            id: this._data.id,
+            health: this._data.health
         });
     }
 
