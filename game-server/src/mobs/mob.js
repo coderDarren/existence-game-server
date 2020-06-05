@@ -8,6 +8,7 @@ const NETMSG_MOB_HIT_PLAYER = "MOB_HIT_PLAYER";
 const NETMSG_MOB_COMBAT_STATE_CHANGE = "MOB_COMBAT_STATE_CHANGE";
 const NETMSG_MOB_ATTACK_RANGE_CHANGE = "MOB_ATTACK_RANGE_STATE_CHANGE";
 const NETMSG_MOB_HEALTH_CHANGE = "MOB_HEALTH_CHANGE";
+const NETMSG_MOB_DEATH = "MOB_DEATH";
 
 class Mob {
 
@@ -22,6 +23,8 @@ class Mob {
         this._runSpeed = this._data.runSpeed - (this._speedVariance / 2) + Math.random() * this._speedVariance;
         this._attackTimer = 0;
         this._rechargeTimer = 0;
+        this._respawnTimer = 0;
+        this._dead = false;
 
         // create a table for the mob to keep track of who is doing the most damage
         this._damageTable = {};
@@ -43,10 +46,13 @@ class Mob {
         this.__patrol__ = this.__patrol__.bind(this);
         this.__retreat__ = this.__retreat__.bind(this);
         this.__heal_over_time__ = this.__heal_over_time__.bind(this);
+        this.__wait_for_respawn__ = this.__wait_for_respawn__.bind(this);
+        this.__kill__ = this.__kill__.bind(this);
         this.__send_message_to_nearby_players__ = this.__send_message_to_nearby_players__.bind(this);
         this.__on_attack_range_state_change__ = this.__on_attack_range_state_change__.bind(this);
         this.__on_combat_state_change__ = this.__on_combat_state_change__.bind(this);
-        this.__on_health_change__ = this.__on_health_change__.bind(this);
+        this.__on_health_change__ = this.__on_health_change__.bind(this)
+        this.__on_death__ = this.__on_death__.bind(this);
     }
 
     update() {
@@ -60,9 +66,11 @@ class Mob {
         } else if (!_mobPos.equals(this._defaultPos)) {
             this.__retreat__();
             this.__heal_over_time__();
-        } else {
+        } else if (!this._dead) { // alive
             this.__patrol__();
             this.__heal_over_time__();
+        } else { // dead
+            this.__wait_for_respawn__();
         }
     }
 
@@ -82,18 +90,25 @@ class Mob {
         this._data.health -= _mobHitInfo.dmg;
         if (this._data.health <= 0) {
             this._data.health = 0;
+            this.__kill__();
         }
         this.__on_health_change__();
     }
 
     __choose_target__() {
         const _mobPos = new Vector3(this._data.pos);
+        
+        // find nearby potential targets
         this._targets = this._game.scanNearbyPlayers(this._data.pos, this._data.retreatRange);
+
+        // start with the closest target
         if (this._target == null) {
             this._target = this._targets[0];
+            this.__on_attack_start__(this._target.name);
             return;
         }
 
+        // choose the target that does the most damage
         var _max = 0;
         var _maxIndex = 0;
         for (i in this._targets) {
@@ -108,15 +123,18 @@ class Mob {
             }
         }
 
+        // take the mob out of combat is there are no more targets or if the mob is 50 units away from their spawn pos
         if (this._targets.length == 0 || _mobPos.distanceTo(this._defaultPos) > 50) {
             this._waypoints = getPath(this._game.scene.waypointGraph, _mobPos, this._defaultPos);
             this._waypoint = this._waypoints[0];
             this.__lookAt_target__();
             this._data.inCombat = false;
+            this._target = null;
             this.__on_combat_state_change__();
             return;
         }
 
+        // assign the target if it is new
         if (this._targets[_maxIndex].name != this._target.name) {
             // this is a new target
             this.__on_attack_start__(this._targets[_maxIndex].name);
@@ -126,6 +144,7 @@ class Mob {
     }
 
     __follow_target__() {
+        if (!this._target) return;
         const _mobPos = new Vector3(this._data.pos);
         const _targetPos = new Vector3(this._target.pos);
         if (_mobPos.distanceTo(_targetPos) < 1) {
@@ -220,7 +239,6 @@ class Mob {
             this._damageTable = {};
             this._data.inCombat = true;
             this.__on_combat_state_change__();
-            this.__on_attack_start__(this._targets[0].name);
         }
     }
 
@@ -230,6 +248,43 @@ class Mob {
             this._data.health = this._data.maxHealth;
         } else {
             this.__on_health_change__();
+        }
+    }
+
+    __kill__() {
+        if (this._dead) return;
+        this._dead = true;
+        this._data.inCombat = false;
+        this._target = null;
+        this._data.inAttackRange = false;
+        this.__on_death__();
+    }
+
+    __wait_for_respawn__() {
+        this._respawnTimer += this._game.deltaTime;
+        if (this._respawnTimer > this._data.respawnTime) {
+            // respawn 
+            this._respawnTimer = 0;
+            this._data.health = this._data.maxHealth;
+            this._data.energy = this._data.maxEnergy;
+            this._target = null;
+            this._targets = [];
+            this._attackTimer = 0;
+            this._rechargeTimer = 0;
+            this._respawnTimer = 0;
+            this._dead = false;
+
+            // create a table for the mob to keep track of who is doing the most damage
+            this._damageTable = {};
+            this._aggroSwitchTime = 1;
+            this._aggroSwitchTimer = 0;
+
+            // these values help us determine if the mob is stationary or not
+            this._lastFramePos = this._data.pos;
+            this._lastFrameRot = this._data.rot;
+            this._posChange = 0;
+            this._rotChange = 0;
+            this._dead = false;
         }
     }
 
@@ -276,6 +331,30 @@ class Mob {
         });
     }
 
+    __on_death__() {
+        // calculate xp reward
+        const _xp = this._data.xpReward + (Math.random()*this._data.xpRewardVariance);
+        var _xpAllottment = [];
+
+        // decide who gets xp for this kill
+        Object.keys(this._damageTable).forEach((_key, _index) => {
+            _xpAllottment.push({
+                playerName: _key,
+                xp: Math.floor(_xp)
+            });
+        });
+
+        // send xp and loot
+        this.__send_message_to_nearby_players__(NETMSG_MOB_DEATH, {
+            id: this._data.id,
+            xpAllottment: _xpAllottment
+            // loot rights (array of players that can loot)
+            // xp distribution (array of players and xp allotment)
+        });
+
+        this._damageTable = {};
+    }
+
     __send_message_to_nearby_players__(_evt, _msg) {
         const _nearbySockets = this._game.scanNearbyPlayerSockets(this._data.pos, 50);
         for (i in _nearbySockets) {
@@ -312,6 +391,10 @@ class Mob {
 
     get isStationary() {
         return this._posChange == 0 && this._rotChange == 0;
+    }
+
+    get dead() {
+        return this._dead;
     }
 }
 

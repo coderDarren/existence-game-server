@@ -25,6 +25,7 @@ class Player {
         this._nearbyMobsState = {};
         this._nearbyPlayers = [];
         this._nearbyPlayersState = {};
+        this._dead = false;
 
         // these values help us determine if the player is stationary or not
         this._lastFramePos = this._data.player.pos;
@@ -74,6 +75,10 @@ class Player {
             // do not send player data back to himself
             if (_o.data.id == this._data.player.id) {
                 //console.log(this._data.player.id)
+                return false;
+            }
+
+            if (_o.dead) {
                 return false;
             }
 
@@ -181,9 +186,8 @@ class Player {
     get socket() { return this._socket; }
     get nearbyMobs() { return this._nearbyMobs; }
     get nearbyPlayers() { return this._nearbyPlayers; }
-    get isStationary() {
-        return this._stationaryTimer > 2;
-    }
+    get isStationary() { return this._stationaryTimer > 2; }
+    get dead() { return this._dead; }
     set data(_val) { this._data.player = _val; }
 }
 

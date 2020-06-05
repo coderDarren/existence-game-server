@@ -25,6 +25,9 @@ const dummy = function(_level, _pos, _rot) {
         attackRange: 2,
         inCombat: false,
         inAttackRange: false,
+        respawnTime: 10, // in seconds
+        xpReward: 50*_level,
+        xpRewardVariance: 10*_level,
         pos: new Vector3(_pos).obj,
         rot: new Vector3(_rot).obj,
         inCombat: false,
