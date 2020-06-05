@@ -177,6 +177,7 @@ class Game
             _socket.on(NETMSG_DISCONNECT, function() {
                 // locate player
                 const _player = this._players.find(_p => { return _p.data.name == _thisPlayer.data.name; });
+                if (!_player) return;
                 
                 // emit event to connected clients
                 _socket.broadcast.emit(NETMSG_PLAYER_LEFT, {

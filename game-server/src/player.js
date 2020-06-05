@@ -31,6 +31,7 @@ class Player {
         this._lastFrameRot = this._data.player.rot;
         this._posChange = 0;
         this._rotChange = 0;
+        this._stationaryTimer = 0;
 
         this.__hook__ = this.__hook__.bind(this);
         this.__handle_nearby_objects__ = this.__handle_nearby_objects__.bind(this);
@@ -45,8 +46,8 @@ class Player {
 
     update() {
         this.__detect_stationary__();
-        this._nearbyMobs = this.__handle_nearby_objects__(this._nearbyMobs, this._nearbyMobsState, this._game.mobs, 50, this.__on_mob_spawn__, this.__on_mob_exit__);
-        this._nearbyPlayers = this.__handle_nearby_objects__(this._nearbyPlayers, this._nearbyPlayersState, this._game.players, 50, this.__on_player_spawn__, this.__on_player_exit__);
+        this._nearbyMobs = this.__handle_nearby_objects__(this._nearbyMobs, this._nearbyMobsState, this._game.mobs, 'id', 50, this.__on_mob_spawn__, this.__on_mob_exit__);
+        this._nearbyPlayers = this.__handle_nearby_objects__(this._nearbyPlayers, this._nearbyPlayersState, this._game.players, 'name', 50, this.__on_player_spawn__, this.__on_player_exit__);
     }
 
     __detect_stationary__() {
@@ -54,9 +55,14 @@ class Player {
         this._rotChange = new Vector3(this._data.player.rot).distanceTo(new Vector3(this._lastFrameRot));
         this._lastFramePos = this._data.player.pos;
         this._lastFrameRot = this._data.player.rot;
+        if (this._posChange == 0 && this._rotChange == 0) {
+            this._stationaryTimer += this._game.deltaTime;
+        } else {
+            this._stationaryTimer = 0;
+        }
     }
 
-    __handle_nearby_objects__(_output, _state, _objects, _range, _evt_on_spawn_, _evt_on_exit_) {
+    __handle_nearby_objects__(_output, _state, _objects, id, _range, _evt_on_spawn_, _evt_on_exit_) {
         // clear the state
         Object.keys(_state).forEach((_key, _index) => {
             _state[_key] = false;
@@ -67,6 +73,7 @@ class Player {
         _output = filter(_objects, function(_o) {
             // do not send player data back to himself
             if (_o.data.id == this._data.player.id) {
+                //console.log(this._data.player.id)
                 return false;
             }
 
@@ -76,13 +83,14 @@ class Player {
             if (_playerPos.distanceTo(_pos) <= _range) {
 
                 // if within range, check to see if this object has been spawned yet
-                if (_state[_o.data.id] == undefined) { // object has not been spawned
+                //console.log(_o.data[id])
+                if (_state[_o.data[`${id}`]] == undefined) { // object has not been spawned
                     // send spawn event
                     _evt_on_spawn_(_o);
                 }
 
                 // update the object state
-                _state[_o.data.id] = true;
+                _state[_o.data[`${id}`]] = true;
 
                 // do not send object data that is not moving
                 if (_o.isStationary) {
@@ -174,7 +182,7 @@ class Player {
     get nearbyMobs() { return this._nearbyMobs; }
     get nearbyPlayers() { return this._nearbyPlayers; }
     get isStationary() {
-        return this._posChange == 0 && this._rotChange == 0;
+        return this._stationaryTimer > 2;
     }
     set data(_val) { this._data.player = _val; }
 }
