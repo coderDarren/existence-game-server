@@ -23,6 +23,11 @@ class Mob {
         this._attackTimer = 0;
         this._rechargeTimer = 0;
 
+        // create a table for the mob to keep track of who is doing the most damage
+        this._damageTable = {};
+        this._aggroSwitchTime = 1;
+        this._aggroSwitchTimer = 0;
+
         // these values help us determine if the mob is stationary or not
         this._lastFramePos = this._data.pos;
         this._lastFrameRot = this._data.rot;
@@ -69,6 +74,11 @@ class Mob {
     }
 
     hit(_mobHitInfo) {
+        if (this._damageTable_mobHitInfo.playerName] == undefined) {
+            this._damageTable[_mobHitInfo.playerName] = 0;
+        }
+        this._damageTable[_mobHitInfo.playerName] += _mobHitInfo;
+
         this._data.health -= _mobHitInfo.dmg;
         if (this._data.health <= 0) {
             this._data.health = 0;
@@ -77,8 +87,23 @@ class Mob {
     }
 
     __choose_target__() {
-        this._targets = this._game.scanNearbyPlayers(this._data.pos, this._data.retreatRange);
         const _mobPos = new Vector3(this._data.pos);
+        this._targets = this._game.scanNearbyPlayers(this._data.pos, this._data.retreatRange);
+
+        var _max = 0;
+        var _maxIndex = 0;
+        for (i in this._targets) {
+            const _target = this._targets[i];
+            if (this._damageTable[_target.name] == undefined) {
+                this._damageTable[_target.name] = 0;
+            }
+
+            if (this._damageTable[_target.name] > _max) {
+                _max = this._damageTable[_target.name];
+                _maxIndex = i;
+            }
+        }
+
         if (this._targets.length == 0 || _mobPos.distanceTo(this._defaultPos) > 50) {
             this._waypoints = getPath(this._game.scene.waypointGraph, _mobPos, this._defaultPos);
             this._waypoint = this._waypoints[0];
@@ -88,7 +113,7 @@ class Mob {
             return;
         }
 
-        this._target = this._targets[0];
+        this._target = this._targets[_maxIndex];
     }
 
     __follow_target__() {
@@ -183,6 +208,7 @@ class Mob {
             this._waypoint = this._waypoints[0];
             this.__lookAt_target__();
             this._rechargeTimer = this._data.rechargeSpeed;
+            this._damageTable = {};
             this._data.inCombat = true;
             this.__on_combat_state_change__();
             this.__on_attack_start__(this._targets[0].name);
