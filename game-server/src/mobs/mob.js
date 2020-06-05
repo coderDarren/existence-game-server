@@ -89,6 +89,10 @@ class Mob {
     __choose_target__() {
         const _mobPos = new Vector3(this._data.pos);
         this._targets = this._game.scanNearbyPlayers(this._data.pos, this._data.retreatRange);
+        if (this._target == null) {
+            this._target = this._targets[0];
+            return;
+        }
 
         var _max = 0;
         var _maxIndex = 0;
@@ -113,11 +117,12 @@ class Mob {
             return;
         }
 
-        if (this._targets[_maxIndex].name != this._target.name) {
+        if (this._target != undefined && this._targets[_maxIndex].name != this._target.name) {
             // this is a new target
-            this._target = this._targets[_maxIndex];
             this.__on_attack_start__(this._target.name);
         }
+
+        this._target = this._targets[_maxIndex];
     }
 
     __follow_target__() {
