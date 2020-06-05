@@ -98,7 +98,6 @@ class Mob {
                 this._damageTable[_target.name] = 0;
             }
 
-            console.log(`damage table: ${JSON.stringify(this._damageTable)}`)
             if (this._damageTable[_target.name] > _max) {
                 _max = this._damageTable[_target.name];
                 _maxIndex = i;
@@ -114,7 +113,11 @@ class Mob {
             return;
         }
 
-        this._target = this._targets[_maxIndex];
+        if (this._targets[_maxIndex].name != this._target.name) {
+            // this is a new target
+            this._target = this._targets[_maxIndex];
+            this.__on_attack_start__(this._target.name);
+        }
     }
 
     __follow_target__() {
