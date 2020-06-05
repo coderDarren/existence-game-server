@@ -117,9 +117,9 @@ class Mob {
             return;
         }
 
-        if (this._target != undefined && this._targets[_maxIndex].name != this._target.name) {
+        if (this._targets[_maxIndex].name != this._target.name) {
             // this is a new target
-            this.__on_attack_start__(this._target.name);
+            this.__on_attack_start__(this._targets[_maxIndex].name);
         }
 
         this._target = this._targets[_maxIndex];
