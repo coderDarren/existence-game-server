@@ -77,7 +77,7 @@ class Mob {
         if (this._damageTable[_mobHitInfo.playerName] == undefined) {
             this._damageTable[_mobHitInfo.playerName] = 0;
         }
-        this._damageTable[_mobHitInfo.playerName] += _mobHitInfo;
+        this._damageTable[_mobHitInfo.playerName] += _mobHitInfo.dmg;
 
         this._data.health -= _mobHitInfo.dmg;
         if (this._data.health <= 0) {
@@ -98,6 +98,7 @@ class Mob {
                 this._damageTable[_target.name] = 0;
             }
 
+            console.log(`damage table: ${JSON.stringify(this._damageTable)}`)
             if (this._damageTable[_target.name] > _max) {
                 _max = this._damageTable[_target.name];
                 _maxIndex = i;
