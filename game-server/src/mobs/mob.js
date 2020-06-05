@@ -74,7 +74,7 @@ class Mob {
     }
 
     hit(_mobHitInfo) {
-        if (this._damageTable_mobHitInfo.playerName] == undefined) {
+        if (this._damageTable[_mobHitInfo.playerName] == undefined) {
             this._damageTable[_mobHitInfo.playerName] = 0;
         }
         this._damageTable[_mobHitInfo.playerName] += _mobHitInfo;
