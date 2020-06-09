@@ -1,5 +1,6 @@
 'use strict';
 const API = require('../util/api.js');
+const {map} = require('lodash');
 const {Vector3, Vec3Right, LowPrecisionSimpleVector3} = require('../util/vector.js');
 const getPath = require('./pathfinder.js');
 
@@ -323,10 +324,27 @@ class Mob {
 
     async __on_death__() {
         // get loot
-        const _loot = await API.getMobLoot({
-            mobName: this._data.name
+        this._loot = map(await API.getMobLoot({
+            mobName: this._data.name,
+            lvl: this._data.level
+        }), _l => {
+            return {
+                ..._l,
+                locked: false,
+                busy: false
+            }
         });
-        console.log(_loot);
+
+        this._lootPreview = map(this._loot, _l => {
+            return {
+                id: _l.id,
+                name: _l.name,
+                level: _l.level,
+                icon: _l.icon,
+                locked: false,
+                busy: false
+            } 
+        });
 
         // calculate xp reward
         const _xp = this._data.xpReward + (Math.random()*this._data.xpRewardVariance);
@@ -343,7 +361,9 @@ class Mob {
         // send xp and loot
         this.__send_message_to_nearby_players__(NETMSG_MOB_DEATH, {
             id: this._data.id,
-            xpAllottment: _xpAllottment
+            name: this._data.name,
+            xpAllottment: _xpAllottment,
+            lootPreview: this._lootPreview,
             // loot rights (array of players that can loot)
             // xp distribution (array of players and xp allotment)
         });
@@ -376,7 +396,8 @@ class Mob {
             rot: LowPrecisionSimpleVector3(this._data.rot),
             inCombat: this._data.inCombat,
             inAttackRange: this._data.inAttackRange,
-            dead: this._dead
+            dead: this._dead,
+            lootPreview: this._lootPreview
         }
     }
 

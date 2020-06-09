@@ -19,8 +19,11 @@ class API {
     }
 
     async getMobLoot(_data) {
-        const _loot = await this._rest.get(`${this._apiUrl}getMobLoot?mobName=${_data.mobName}`);
-        return _loot;
+        const _loot = await this._rest.get(`${this._apiUrl}getMobLoot?mobName=${_data.mobName}&lvl=${_data.lvl}`);
+        if (_loot.statusCode != 200) {
+            return [];
+        }
+        return JSON.parse(_loot.message);
     }
 }
 
