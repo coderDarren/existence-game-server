@@ -78,10 +78,6 @@ class Player {
                 return false;
             }
 
-            if (_o.dead) {
-                return false;
-            }
-
             const _pos = new Vector3(_o.data.pos);
 
             // compare the distance of the player to the object

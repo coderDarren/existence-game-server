@@ -1,9 +1,11 @@
 'use strict';
 const Player = require('./player.js');
 const {GameScene, PathfindingTestScene} = require('./scenes/scenes.js');
+const crypto = require('crypto');
 const API = require('./util/api.js');
 const {filter,findIndex, map} = require('lodash');
 const {Vector3} = require('./util/vector.js');
+const Mob = require('./mobs/mob.js');
 
 const NETMSG_CONNECT = "connection";
 const NETMSG_DISCONNECT = "disconnect";
@@ -104,6 +106,19 @@ class Game
         return map(_nearbyPlayers, _player => {
             return _player.socket
         });
+    }
+
+    respawnMob(_mob, _interval) {
+        // generate new id
+        _mob.id = crypto.randomBytes(4).toString('hex');
+
+        setTimeout(() => {
+            this._mobs.push(new Mob(this, _mob));
+        },_interval);
+    }
+
+    killMob(_id) {
+        this._mobs = filter(this._mobs, _m => {return _m.data.id != _id;});
     }
 
     /*

@@ -1,4 +1,5 @@
 'use strict';
+const API = require('../util/api.js');
 const {Vector3, Vec3Right, LowPrecisionSimpleVector3} = require('../util/vector.js');
 const getPath = require('./pathfinder.js');
 
@@ -15,27 +16,12 @@ class Mob {
     constructor(_game, _data) {
         this._game = _game;
         this._data = _data;
+        // track initial data for respawn
+        this._initialData = JSON.parse(JSON.stringify(this._data));
         this._targets = [];
-        this._target = null;
         this._defaultPos = new Vector3(this._data.pos);
         this._defaultRot = new Vector3(this._data.rot);
         this._speedVariance = 2;
-        this._runSpeed = this._data.runSpeed - (this._speedVariance / 2) + Math.random() * this._speedVariance;
-        this._attackTimer = 0;
-        this._rechargeTimer = 0;
-        this._respawnTimer = 0;
-        this._dead = false;
-
-        // create a table for the mob to keep track of who is doing the most damage
-        this._damageTable = {};
-        this._aggroSwitchTime = 1;
-        this._aggroSwitchTimer = 0;
-
-        // these values help us determine if the mob is stationary or not
-        this._lastFramePos = this._data.pos;
-        this._lastFrameRot = this._data.rot;
-        this._posChange = 0;
-        this._rotChange = 0;
 
         this.__detect_stationary__ = this.__detect_stationary__.bind(this);
         this.__choose_target__ = this.__choose_target__.bind(this);
@@ -46,20 +32,25 @@ class Mob {
         this.__patrol__ = this.__patrol__.bind(this);
         this.__retreat__ = this.__retreat__.bind(this);
         this.__heal_over_time__ = this.__heal_over_time__.bind(this);
-        this.__wait_for_respawn__ = this.__wait_for_respawn__.bind(this);
         this.__kill__ = this.__kill__.bind(this);
+        this.__reset__ = this.__reset__.bind(this);
+        this.__handle_loot__ = this.__handle_loot__.bind(this);
         this.__send_message_to_nearby_players__ = this.__send_message_to_nearby_players__.bind(this);
         this.__on_attack_range_state_change__ = this.__on_attack_range_state_change__.bind(this);
         this.__on_combat_state_change__ = this.__on_combat_state_change__.bind(this);
         this.__on_health_change__ = this.__on_health_change__.bind(this)
         this.__on_death__ = this.__on_death__.bind(this);
+
+        this.__reset__();
     }
 
     update() {
         this.__detect_stationary__();
         const _mobPos = new Vector3(this._data.pos);
         
-        if (this._data.inCombat) {
+        if (this._dead) {
+            this.__handle_loot__();
+        } else if (this._data.inCombat) {
             this.__choose_target__();
             this.__follow_target__();
             this.__attack_target__();
@@ -69,8 +60,6 @@ class Mob {
         } else if (!this._dead) { // alive
             this.__patrol__();
             this.__heal_over_time__();
-        } else { // dead
-            this.__wait_for_respawn__();
         }
     }
 
@@ -260,32 +249,33 @@ class Mob {
         this.__on_death__();
     }
 
-    __wait_for_respawn__() {
-        this._respawnTimer += this._game.deltaTime;
-        if (this._respawnTimer > this._data.respawnTime) {
-            // respawn 
-            this._respawnTimer = 0;
-            this._data.health = this._data.maxHealth;
-            this._data.energy = this._data.maxEnergy;
-            this._target = null;
-            this._targets = [];
-            this._attackTimer = 0;
-            this._rechargeTimer = 0;
-            this._respawnTimer = 0;
-            this._dead = false;
-
-            // create a table for the mob to keep track of who is doing the most damage
-            this._damageTable = {};
-            this._aggroSwitchTime = 1;
-            this._aggroSwitchTimer = 0;
-
-            // these values help us determine if the mob is stationary or not
-            this._lastFramePos = this._data.pos;
-            this._lastFrameRot = this._data.rot;
-            this._posChange = 0;
-            this._rotChange = 0;
-            this._dead = false;
+    __handle_loot__() {
+        this._lootTimer += this._game.deltaTime;
+        if (this._lootTimer > this._data.lootTime) {
+            this._game.killMob(this._data.id);
         }
+    }
+
+    __reset__() {
+        this._target = null;
+        this._data.health = this._data.maxHealth;
+        this._data.energy = this._data.maxEnergy;
+        this._runSpeed = this._data.runSpeed - (this._speedVariance / 2) + Math.random() * this._speedVariance;
+        this._attackTimer = 0;
+        this._rechargeTimer = 0;
+        this._lootTimer = 0;
+
+        // create a table for the mob to keep track of who is doing the most damage
+        this._damageTable = {};
+        this._aggroSwitchTime = 1;
+        this._aggroSwitchTimer = 0;
+
+        // these values help us determine if the mob is stationary or not
+        this._lastFramePos = this._data.pos;
+        this._lastFrameRot = this._data.rot;
+        this._posChange = 0;
+        this._rotChange = 0;
+        this._dead = false;
     }
 
     __on_attack__() {
@@ -331,7 +321,13 @@ class Mob {
         });
     }
 
-    __on_death__() {
+    async __on_death__() {
+        // get loot
+        const _loot = await API.getMobLoot({
+            mobName: this._data.name
+        });
+        console.log(_loot);
+
         // calculate xp reward
         const _xp = this._data.xpReward + (Math.random()*this._data.xpRewardVariance);
         var _xpAllottment = [];
@@ -353,6 +349,8 @@ class Mob {
         });
 
         this._damageTable = {};
+
+        this._game.respawnMob(this._initialData, this._data.respawnTime*1000);
     }
 
     __send_message_to_nearby_players__(_evt, _msg) {
@@ -377,7 +375,8 @@ class Mob {
             pos: LowPrecisionSimpleVector3(this._data.pos),
             rot: LowPrecisionSimpleVector3(this._data.rot),
             inCombat: this._data.inCombat,
-            inAttackRange: this._data.inAttackRange
+            inAttackRange: this._data.inAttackRange,
+            dead: this._dead
         }
     }
 

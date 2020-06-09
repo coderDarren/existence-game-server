@@ -17,6 +17,11 @@ class API {
     addInventoryItem(_data, _onSuccess, _onFail) {
         this._rest.postDataWithCallbacks(`${this._apiUrl}addInventory`, _data, _onSuccess, _onFail);
     }
+
+    async getMobLoot(_data) {
+        const _loot = await this._rest.get(`${this._apiUrl}getMobLoot?mobName=${_data.mobName}`);
+        return _loot;
+    }
 }
 
 module.exports = new API();

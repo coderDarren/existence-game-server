@@ -33,6 +33,7 @@ const dummy = function(_level, _pos, _rot) {
         inCombat: false,
         healDelta: 5,
         runSpeed: 3,
+        lootTime: 120, // 2 minutes
         // !! TODO
         // Create mob actions initializer
         actions: []
