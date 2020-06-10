@@ -1,6 +1,6 @@
 'use strict';
 const API = require('../util/api.js');
-const {map} = require('lodash');
+const {map, find} = require('lodash');
 const {Vector3, Vec3Right, LowPrecisionSimpleVector3} = require('../util/vector.js');
 const getPath = require('./pathfinder.js');
 
@@ -83,6 +83,30 @@ class Mob {
             this.__kill__();
         }
         this.__on_health_change__();
+    }
+
+    /*
+     * Called by player when trying to loot an item
+     * return false if loot is locked, or unavailable to player
+     * return true if loot is available
+     */
+    tryLoot(_id) {
+        if (!this._dead) return -1;
+        if (this._lootPreview == null) return -1;
+        var _loot = find(this._lootPreview, _l => {return _l.id == _id});
+        if (!_loot) return -1;
+        if (_loot.locked) return -2;
+        _loot.locked = true;
+        return find(this._loot, _l => {return _l.id == _id});
+    }
+
+    /*
+     * Called by player if looting fails due to server error
+     */
+    restoreLoot(_loot) {
+        var _loot = find(this._lootPreview, _l => {return _l.id == _id});
+        if (!_loot) return;
+        _loot.locked = false;
     }
 
     __choose_target__() {
@@ -324,15 +348,9 @@ class Mob {
 
     async __on_death__() {
         // get loot
-        this._loot = map(await API.getMobLoot({
+        this._loot = await API.getMobLoot({
             mobName: this._data.name,
             lvl: this._data.level
-        }), _l => {
-            return {
-                ..._l,
-                locked: false,
-                busy: false
-            }
         });
 
         this._lootPreview = map(this._loot, _l => {
@@ -341,8 +359,7 @@ class Mob {
                 name: _l.name,
                 level: _l.level,
                 icon: _l.icon,
-                locked: false,
-                busy: false
+                locked: false
             } 
         });
 
@@ -416,6 +433,7 @@ class Mob {
     get dead() {
         return this._dead;
     }
+
 }
 
 module.exports = Mob;

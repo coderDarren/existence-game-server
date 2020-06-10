@@ -3,7 +3,7 @@ const Player = require('./player.js');
 const {GameScene, PathfindingTestScene} = require('./scenes/scenes.js');
 const crypto = require('crypto');
 const API = require('./util/api.js');
-const {filter,findIndex, map} = require('lodash');
+const {filter,findIndex, find, map} = require('lodash');
 const {Vector3} = require('./util/vector.js');
 const Mob = require('./mobs/mob.js');
 
@@ -119,6 +119,10 @@ class Game
 
     killMob(_id) {
         this._mobs = filter(this._mobs, _m => {return _m.data.id != _id;});
+    }
+
+    getMob(_id) {
+        return find(this._mobs, _m => {return _m.data.id == _id;});
     }
 
     /*

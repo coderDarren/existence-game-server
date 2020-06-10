@@ -14,6 +14,10 @@ const NETMSG_MOB_EXIT = "MOB_EXIT";
 const NETMSG_PLAYER_SPAWN = "PLAYER_SPAWN";
 const NETMSG_PLAYER_EXIT = "PLAYER_EXIT";
 const NETMSG_PLAYER_HIT_MOB_CONFIRMATION = "PLAYER_HIT_MOB_CONFIRMATION";
+const NETMSG_PLAYER_LOOT_MOB = "PLAYER_LOOT_MOB";
+const NETMSG_MOB_LOOTED = "MOB_LOOTED";
+const NETMSG_MOB_LOOT_LOCKED = "PLAYER_MOB_LOOT_LOCKED";
+const NETMSG_PLAYER_LOCK_LOOT = "PLAYER_LOCK_LOOT";
 
 class Player {
     
@@ -41,6 +45,7 @@ class Player {
         this.__on_player_spawn__ = this.__on_player_spawn__.bind(this);
         this.__on_player_exit__ = this.__on_player_exit__.bind(this);
         this.__detect_stationary__ = this.__detect_stationary__.bind(this);
+        this.__send_message_to_nearby_players__ = this.__send_message_to_nearby_players__.bind(this);
 
         this.__hook__();
     }
@@ -168,13 +173,58 @@ class Player {
                 id: this._data.account.id,
                 apiKey: this._data.account.apiKey,
                 playerID: this._data.player.id,
-                itemID: _item.id
+                itemID: _item.id,
+                lvl: 1
             }, _success => {
                 this._socket.emit(NETMSG_ADD_INVENTORY_SUCCESS, {message:_success.message});
             }, _failure => {
                 this._socket.emit(NETMSG_ADD_INVENTORY_FAILURE, {message:_failure.message});
             });
         }.bind(this));
+
+        this._socket.on(NETMSG_PLAYER_LOOT_MOB, function(_lootInfo) {
+            console.log(`looting ${JSON.stringify(_lootInfo)}`);
+            const _mob = this._game.getMob(_lootInfo.mobID);
+            if (!_mob) return;
+            console.log(`mob: ${_mob.data.id}`);
+            const _loot = _mob.tryLoot(_lootInfo.itemID);
+            console.log(`loot: ${JSON.stringify(_loot)}`);
+            if (_loot == -1) return;
+            if (_loot == -2) {
+                // loot is locked
+                this._socket.emit(NETMSG_MOB_LOOT_LOCKED, {message:_lootInfo});
+                return;
+            }
+
+            API.addInventoryItem({
+                id: this._data.account.id,
+                apiKey: this._data.account.apiKey,
+                playerID: this._data.player.id,
+                itemID: _lootInfo.itemID,
+                lvl: _loot.level
+            }, _success => {
+                const _mobLootData = {
+                    playerID: this._data.player.id,
+                    mobID: _lootInfo.mobID,
+                    itemID: _loot.id
+                };
+                this._socket.emit(NETMSG_ADD_INVENTORY_SUCCESS, {message:_success.message});
+                this._socket.emit(NETMSG_MOB_LOOTED, {message:JSON.stringify(_mobLootData)});
+                this.__send_message_to_nearby_players__(NETMSG_MOB_LOOTED, _mobLootData);
+            }, _failure => {
+                _mob.restoreLoot(_loot.id);
+            });
+
+        }.bind(this));
+    }
+
+    __send_message_to_nearby_players__(_evt, _msg) {
+        for (i in this._nearbyPlayers) {
+            const _socket = this._nearbyPlayers[i].socket;
+            _socket.emit(_evt, {
+                message: JSON.stringify(_msg)
+            });
+        }
     }
     
     get data() { return this._data.player; }
