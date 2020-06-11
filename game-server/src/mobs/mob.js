@@ -1,6 +1,6 @@
 'use strict';
 const API = require('../util/api.js');
-const {map, find} = require('lodash');
+const {map, find, filter} = require('lodash');
 const {Vector3, Vec3Right, LowPrecisionSimpleVector3} = require('../util/vector.js');
 const getPath = require('./pathfinder.js');
 
@@ -97,6 +97,7 @@ class Mob {
         if (!_loot) return -1;
         if (_loot.locked) return -2;
         _loot.locked = true;
+        this._lootPreview = filter(this._lootPreview, _l => {return _l.id != _id;});
         return find(this._loot, _l => {return _l.id == _id});
     }
 

@@ -183,12 +183,9 @@ class Player {
         }.bind(this));
 
         this._socket.on(NETMSG_PLAYER_LOOT_MOB, function(_lootInfo) {
-            console.log(`looting ${JSON.stringify(_lootInfo)}`);
             const _mob = this._game.getMob(_lootInfo.mobID);
             if (!_mob) return;
-            console.log(`mob: ${_mob.data.id}`);
             const _loot = _mob.tryLoot(_lootInfo.itemID);
-            console.log(`loot: ${JSON.stringify(_loot)}`);
             if (_loot == -1) return;
             if (_loot == -2) {
                 // loot is locked
@@ -209,7 +206,7 @@ class Player {
                     itemID: _loot.id
                 };
                 this._socket.emit(NETMSG_ADD_INVENTORY_SUCCESS, {message:_success.message});
-                this._socket.emit(NETMSG_MOB_LOOTED, {message:JSON.stringify(_mobLootData)});
+                //this._socket.emit(NETMSG_MOB_LOOTED, {message:JSON.stringify(_mobLootData)});
                 this.__send_message_to_nearby_players__(NETMSG_MOB_LOOTED, _mobLootData);
             }, _failure => {
                 _mob.restoreLoot(_loot.id);
@@ -219,8 +216,9 @@ class Player {
     }
 
     __send_message_to_nearby_players__(_evt, _msg) {
-        for (i in this._nearbyPlayers) {
-            const _socket = this._nearbyPlayers[i].socket;
+        const _nearbyPlayers = this._game.scanNearbyPlayerSockets(this._data.player.pos, 50);
+        for (i in _nearbyPlayers) {
+            const _socket = _nearbyPlayers[i];
             _socket.emit(_evt, {
                 message: JSON.stringify(_msg)
             });
