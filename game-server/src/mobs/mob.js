@@ -190,7 +190,7 @@ class Mob {
             this._attackTimer += this._game.deltaTime;
             if (this._attackTimer > this._data.attackSpeed) {
                 // send damage info to all nearby players
-                this.__on_hit_player__(this._target.name, Math.floor((Math.random()+1)*10));
+                this.__on_hit_player__(this._target, Math.floor((Math.random()+1)*10));
 
                 // reset timers
                 this._attackTimer = 0;
@@ -318,12 +318,22 @@ class Mob {
     }
 
     __on_hit_player__(_player, _dmg) {
+        _player.health -= _dmg;
+        if (_player.health < 0) {
+            _player.health = 0;
+        }
+
         this.__send_message_to_nearby_players__(NETMSG_MOB_HIT_PLAYER, {
             mobId: this._data.id,
             mobName: this._data.name,
-            playerName: _player,
-            dmg: _dmg
+            playerName: _player.name,
+            dmg: _dmg,
+            health: _player.health
         });
+
+        if (_player.health == 0) {
+            // notify nearby players..
+        }
     }
 
     __on_attack_range_state_change__() {
