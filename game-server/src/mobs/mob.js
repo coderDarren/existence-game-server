@@ -98,7 +98,10 @@ class Mob {
         if (_loot.locked) return -2;
         _loot.locked = true;
         this._lootPreview = filter(this._lootPreview, _l => {return _l.id != _id;});
-        return find(this._loot, _l => {return _l.id == _id});
+        return JSON.parse(find(this._loot, _loot => {
+            const _l = JSON.parse(_loot);
+            return _l.def.id == _id
+        }));
     }
 
     /*
@@ -364,12 +367,13 @@ class Mob {
             lvl: this._data.level
         });
 
-        this._lootPreview = map(this._loot, _l => {
+        this._lootPreview = map(this._loot, _loot => { 
+            const _l = JSON.parse(_loot);
             return {
-                id: _l.id,
-                name: _l.name,
-                level: _l.level,
-                icon: _l.icon,
+                id: _l.def.id,
+                name: _l.def.name,
+                level: _l.def.level,
+                icon: _l.def.icon,
                 locked: false
             } 
         });

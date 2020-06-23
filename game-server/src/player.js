@@ -198,12 +198,12 @@ class Player {
                 apiKey: this._data.account.apiKey,
                 playerID: this._data.player.id,
                 itemID: _lootInfo.itemID,
-                lvl: _loot.level
+                lvl: _loot.def.level
             }, _success => {
                 const _mobLootData = {
                     playerID: this._data.player.id,
                     mobID: _lootInfo.mobID,
-                    itemID: _loot.id
+                    itemID: _loot.def.id
                 };
                 this._socket.emit(NETMSG_ADD_INVENTORY_SUCCESS, {message:_success.message});
                 //this._socket.emit(NETMSG_MOB_LOOTED, {message:JSON.stringify(_mobLootData)});
