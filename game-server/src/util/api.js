@@ -25,6 +25,16 @@ class API {
         }
         return JSON.parse(_loot.message);
     }
+
+    async equip(_data) {
+        const _res = await this._rest.postData(`${this._apiUrl}equip`, _data);
+        return _res;
+    }
+
+    async unequip(_data) {
+        const _res = await this._rest.postData(`${this._apiUrl}unequip`, _data);
+        return _res;
+    }
 }
 
 module.exports = new API();

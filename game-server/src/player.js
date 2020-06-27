@@ -18,6 +18,12 @@ const NETMSG_PLAYER_LOOT_MOB = "PLAYER_LOOT_MOB";
 const NETMSG_MOB_LOOTED = "MOB_LOOTED";
 const NETMSG_MOB_LOOT_LOCKED = "PLAYER_MOB_LOOT_LOCKED";
 const NETMSG_PLAYER_LOCK_LOOT = "PLAYER_LOCK_LOOT";
+const NETMSG_PLAYER_EQUIP = "PLAYER_EQUIP";
+const NETMSG_PLAYER_UNEQUIP = "PLAYER_UNEQUIP";
+const NETMSG_PLAYER_EQUIP_SUCCESS = "PLAYER_EQUIP_SUCCESS";
+const NETMSG_PLAYER_EQUIP_FAILURE = "PLAYER_EQUIP_FAILURE";
+const NETMSG_PLAYER_UNEQUIP_SUCCESS = "PLAYER_UNEQUIP_SUCCESS";
+const NETMSG_PLAYER_UNEQUIP_FAILURE = "PLAYER_UNEQUIP_FAILURE";
 
 class Player {
     
@@ -45,6 +51,8 @@ class Player {
         this.__on_player_spawn__ = this.__on_player_spawn__.bind(this);
         this.__on_player_exit__ = this.__on_player_exit__.bind(this);
         this.__detect_stationary__ = this.__detect_stationary__.bind(this);
+        this.__on_equip__ = this.__on_equip__.bind(this);
+        this.__on_unequip__ = this.__on_unequip__.bind(this);
         this.__send_message_to_nearby_players__ = this.__send_message_to_nearby_players__.bind(this);
 
         this.__hook__();
@@ -142,6 +150,41 @@ class Player {
         this._socket.emit(NETMSG_PLAYER_EXIT, {message:_playerName});
     }
 
+    async __on_equip__(_data) {
+        // check if equipment already exists
+        const _res = await API.equip({
+            id: this._data.account.id,
+            apiKey: this._data.account.apiKey,
+            playerID: this._data.player.id,
+            itemID: this._data.itemID,
+            inventoryLoc: this._data.inventoryLoc
+        });
+
+        switch (_res.statusCode) {
+            case 200: this._socket.emit(NETMSG_PLAYER_EQUIP_SUCCESS, {message:JSON.stringify({playerID:this._data.player.id,itemID:this._data.itemID})}); break; // success
+            case 1401: this._socket.emit(NETMSG_PLAYER_EQUIP_FAILURE, {message:`You cannot equip an item you do not own.`}); break; // Item does not exist in the player's inventory
+            case 1402: this._socket.emit(NETMSG_PLAYER_EQUIP_FAILURE, {message:`You cannot equip this item.`}); break; // Item is not equippable
+            case 1403: this._socket.emit(NETMSG_PLAYER_EQUIP_FAILURE, {message:`Your current equipment prevents you from using this item.`}); break; // Equipment slot is occupied
+            default: this._socket.emit(NETMSG_PLAYER_EQUIP_FAILURE, {message:`Unable to equip this item.`}); break; // internal server error
+        }
+    }
+
+    async __on_unequip__(_data) {
+        const _res = await API.unequip({
+            id: this._data.account.id,
+            apiKey: this._data.account.apiKey,
+            playerID: this._data.player.id,
+            itemID: this._data.itemID
+        });
+
+        switch (_res.statusCode) {
+            case 200: this._socket.emit(NETMSG_PLAYER_UNEQUIP_SUCCESS, {message:JSON.stringify({playerID:this._data.player.id,itemID:this._data.itemID})}); break; // success
+            case 1401: this._socket.emit(NETMSG_PLAYER_UNEQUIP_FAILURE, {message:`You cannot unequip an item that is not equipped.`}); break; // Item does not exist in the player's equipment
+            case 1402: this._socket.emit(NETMSG_PLAYER_UNEQUIP_FAILURE, {message:`You can not unequip this item.`}); break; // Item is not equippable
+            default: this._socket.emit(NETMSG_PLAYER_UNEQUIP_FAILURE, {message:`Unable to unequip this item.`}); break; // internal server error
+        }
+    }
+
     __hook__() {
         // tell server to update this player
         this._socket.on(NETMSG_PLAYER_DATA, function(_player) {
@@ -213,6 +256,9 @@ class Player {
             });
 
         }.bind(this));
+
+        this._socket.on(NETMSG_PLAYER_EQUIP, this.__on_equip__);
+        this._socket.on(NETMSG_PLAYER_UNEQUIP, this.__on_unequip__);
     }
 
     __send_message_to_nearby_players__(_evt, _msg) {

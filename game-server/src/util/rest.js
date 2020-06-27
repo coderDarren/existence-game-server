@@ -69,16 +69,16 @@ class RestClient
                 var _res = JSON.parse(_xhr.responseText);
                 if (_xhr.readyState == 4 && _xhr.status == 200)
                 {
-                    _resolve(_res);
+                    _resolve({data:_res,statusCode:_xhr.status});
                 }
                 else if (_xhr.status > 300)
                 {
-                    _reject(_res);
+                    _reject({data:_res,statusCode:_xhr.status});
                 }
             }
             _xhr.onerror = () => {
                 _reject({
-                    status: _xhr.status,
+                    statusCode: _xhr.status,
                     statusText: _xhr.statusText
                 });
             }
