@@ -163,7 +163,7 @@ class Player {
         console.log(_res);
 
         switch (_res.data.statusCode) {
-            case 200: this.__send_message_to_nearby_players__(NETMSG_PLAYER_EQUIP_SUCCESS, {playerID:this._data.player.id,itemID:_data.itemID, inventoryLoc: _data.inventoryLoc}); break; // success
+            case 200: this.__send_message_to_nearby_players__(NETMSG_PLAYER_EQUIP_SUCCESS, {playerName:this._data.player.name, playerID:this._data.player.id,itemID:_data.itemID, inventoryLoc: _data.inventoryLoc}); break; // success
             case 1401: this._socket.emit(NETMSG_PLAYER_EQUIP_FAILURE, {message:`You cannot equip an item you do not own.`}); break; // Item does not exist in the player's inventory
             case 1402: this._socket.emit(NETMSG_PLAYER_EQUIP_FAILURE, {message:`You cannot equip this item.`}); break; // Item is not equippable
             case 1403: this._socket.emit(NETMSG_PLAYER_EQUIP_FAILURE, {message:`Your current equipment prevents you from using this item.`}); break; // Equipment slot is occupied
@@ -184,7 +184,7 @@ class Player {
         switch (_res.statusCode) {
             case 200: 
                 const _msg = JSON.parse(_res.data.message);
-                this.__send_message_to_nearby_players__(NETMSG_PLAYER_UNEQUIP_SUCCESS, {playerID:this._data.player.id,itemID:_data.itemID, inventorySlot: _msg.id}); 
+                this.__send_message_to_nearby_players__(NETMSG_PLAYER_UNEQUIP_SUCCESS, {playerName:this._data.player.name, playerID:this._data.player.id,itemID:_data.itemID, inventorySlot: _msg.id}); 
                 break; // success
             case 1401: this._socket.emit(NETMSG_PLAYER_UNEQUIP_FAILURE, {message:`You cannot unequip an item that is not equipped.`}); break; // Item does not exist in the player's equipment
             case 1402: this._socket.emit(NETMSG_PLAYER_UNEQUIP_FAILURE, {message:`You can not unequip this item.`}); break; // Item is not equippable
