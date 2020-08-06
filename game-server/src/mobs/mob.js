@@ -129,7 +129,7 @@ class Mob {
         // choose the target that does the most damage
         var _max = 0;
         var _maxIndex = 0;
-        for (i in this._targets) {
+        for (var i in this._targets) {
             const _target = this._targets[i];
             if (this._damageTable[_target.name] == undefined) {
                 this._damageTable[_target.name] = 0;
@@ -141,10 +141,11 @@ class Mob {
             }
         }
 
-        // take the mob out of combat is there are no more targets or if the mob is 50 units away from their spawn pos
-        if (this._targets.length == 0 || _mobPos.distanceTo(this._defaultPos) > 50) {
-            this._waypoints = getPath(this._game.scene.waypointGraph, _mobPos, this._defaultPos);
-            this._waypoint = this._waypoints[0];
+        // take the mob out of combat if there are no more targets or if the mob is 50 units away from their spawn pos
+        if (this._targets.length == 0 || _mobPos.distanceTo(this._defaultPos) > this._data.retreatRange) {
+            //this._waypoints = getPath(this._game.scene.waypointGraph, _mobPos, this._defaultPos);
+            //this._waypoint = this._waypoints[0];
+            this._waypoint = this._defaultPos;
             this.__lookAt_target__();
             this._data.inCombat = false;
             this._target = null;
@@ -171,9 +172,10 @@ class Mob {
 
         // iterate over positions moving to each one in path
         if (_mobPos.equals(this._waypoint)) {
-            this._waypoints = getPath(this._game.scene.waypointGraph, _mobPos, _targetPos);
-            const _index = this._waypoints.length > 1 ? 1 : 0;
-            this._waypoint = this._waypoints[_index];
+            //this._waypoints = getPath(this._game.scene.waypointGraph, _mobPos, _targetPos);
+            //const _index = this._waypoints.length > 1 ? 1 : 0;
+            //this._waypoint = this._waypoints[_index];
+            this._waypoint = _targetPos;
             this.__lookAt_target__();
         }
 
@@ -193,7 +195,7 @@ class Mob {
             this._attackTimer += this._game.deltaTime;
             if (this._attackTimer > this._data.attackSpeed) {
                 // send damage info to all nearby players
-                this.__on_hit_player__(this._target, Math.floor((Math.random()+1)*10));
+                this.__on_hit_player__(this._target, Math.floor(this._data.minDamage + Math.random() * this._data.maxDamage));
 
                 // reset timers
                 this._attackTimer = 0;
@@ -235,9 +237,10 @@ class Mob {
 
         // iterate over positions moving to each one in path
         if (_mobPos.equals(this._waypoint)) {
-            this._waypoints = getPath(this._game.scene.waypointGraph, _mobPos, _targetPos);
-            const _index = this._waypoints.length > 1 ? 1 : 0;
-            this._waypoint = this._waypoints[_index];
+            //this._waypoints = getPath(this._game.scene.waypointGraph, _mobPos, _targetPos);
+            //const _index = this._waypoints.length > 1 ? 1 : 0;
+            //this._waypoint = this._waypoints[_index];
+            this._waypoint = _targetPos;
             this.__lookAt_target__();
         }
 
@@ -250,8 +253,9 @@ class Mob {
         this._data.rot = this._defaultRot.obj;
         if (this._targets.length > 0) {
             const _targetPos = new Vector3(this._targets[0].pos);
-            this._waypoints = getPath(this._game.scene.waypointGraph, _mobPos, _targetPos);
-            this._waypoint = this._waypoints[0];
+            //this._waypoints = getPath(this._game.scene.waypointGraph, _mobPos, _targetPos);
+            //this._waypoint = this._waypoints[0];
+            this._waypoint = _targetPos;
             this.__lookAt_target__();
             this._rechargeTimer = this._data.rechargeSpeed;
             this._damageTable = {};
@@ -407,7 +411,7 @@ class Mob {
 
     __send_message_to_nearby_players__(_evt, _msg) {
         const _nearbySockets = this._game.scanNearbyPlayerSockets(this._data.pos, 50);
-        for (i in _nearbySockets) {
+        for (var i in _nearbySockets) {
             const _socket = _nearbySockets[i];
             _socket.emit(_evt, {
                 message: JSON.stringify(_msg)
