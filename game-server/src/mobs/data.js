@@ -25,7 +25,7 @@ const a0zix = function(_level, _pos, _rot) {
         attackRange: 2,
         inCombat: false,
         inAttackRange: false,
-        respawnTime: 10, // in seconds
+        respawnTime: 120, // in seconds
         xpReward: 50*_level,
         xpRewardVariance: 10*_level,
         pos: new Vector3(_pos).obj,
@@ -60,7 +60,7 @@ const enragedA0Zix = function(_level, _pos, _rot) {
         attackRange: 2,
         inCombat: false,
         inAttackRange: false,
-        respawnTime: 10, // in seconds
+        respawnTime: 240, // in seconds
         xpReward: 150*_level,
         xpRewardVariance: 10*_level,
         pos: new Vector3(_pos).obj,
