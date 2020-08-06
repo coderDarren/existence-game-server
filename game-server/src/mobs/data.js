@@ -34,8 +34,8 @@ const a0zix = function(_level, _pos, _rot) {
         healDelta: 5,
         runSpeed: 3,
         lootTime: 120, // 2 minutes
-        minDamage: 1*level,
-        maxDamage: 3*level,
+        minDamage: 1*_level,
+        maxDamage: 3*_level,
         // !! TODO
         // Create mob actions initializer
         actions: []
@@ -69,8 +69,8 @@ const enragedA0Zix = function(_level, _pos, _rot) {
         healDelta: 5,
         runSpeed: 5,
         lootTime: 120, // 2 minutes
-        minDamage: 2*level,
-        maxDamage: 3*level,
+        minDamage: 2*_level,
+        maxDamage: 3*_level,
         // !! TODO
         // Create mob actions initializer
         actions: []
