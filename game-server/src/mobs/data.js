@@ -14,10 +14,10 @@ const a0zix = function(_level, _pos, _rot) {
         id: _id,
         name: 'A-0 Zix',
         level: _level,
-        maxHealth: 100*_level,
-        health: 100*_level,
-        maxEnergy: 100*_level,
-        energy: 100*_level,
+        maxHealth: 5*_level,
+        health: 5*_level,
+        maxEnergy: 5*_level,
+        energy: 5*_level,
         attackSpeed: 1,
         rechargeSpeed: 1.5,
         aggroRange: 15,
@@ -35,7 +35,7 @@ const a0zix = function(_level, _pos, _rot) {
         runSpeed: 3,
         lootTime: 120, // 2 minutes
         minDamage: 1,
-        maxDamage: 5,
+        maxDamage: 3,
         // !! TODO
         // Create mob actions initializer
         actions: []
@@ -49,10 +49,10 @@ const enragedA0Zix = function(_level, _pos, _rot) {
         id: _id,
         name: 'Enraged A-0 Zix',
         level: _level,
-        maxHealth: 100*_level,
-        health: 100*_level,
-        maxEnergy: 100*_level,
-        energy: 100*_level,
+        maxHealth: 50*_level,
+        health: 50*_level,
+        maxEnergy: 50*_level,
+        energy: 50*_level,
         attackSpeed: 1,
         rechargeSpeed: 1.5,
         aggroRange: 5,

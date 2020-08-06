@@ -268,6 +268,7 @@ class Mob {
         this._data.health += this._data.healDelta;
         if (this._data.health > this._data.maxHealth) {
             this._data.health = this._data.maxHealth;
+            this.__on_health_change__();
         } else {
             this.__on_health_change__();
         }
