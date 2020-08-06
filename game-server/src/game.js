@@ -94,6 +94,12 @@ class Game
         });
     }
 
+    getPlayer(_name) {
+        return find(this.__obj_data_map__(this._players), _player => {
+            return _player.name == _name;
+        });
+    }
+
     /*
      * Mobs will constantly scan for nearby players
      * Also used to determine the range where players can see other players

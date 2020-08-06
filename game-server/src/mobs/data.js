@@ -26,7 +26,7 @@ const a0zix = function(_level, _pos, _rot) {
         inCombat: false,
         inAttackRange: false,
         respawnTime: 120, // in seconds
-        xpReward: 50*_level,
+        xpReward: 25*_level,
         xpRewardVariance: 10*_level,
         pos: new Vector3(_pos).obj,
         rot: new Vector3(_rot).obj,
@@ -34,8 +34,8 @@ const a0zix = function(_level, _pos, _rot) {
         healDelta: 5,
         runSpeed: 3,
         lootTime: 120, // 2 minutes
-        minDamage: 1,
-        maxDamage: 3,
+        minDamage: 1*level,
+        maxDamage: 3*level,
         // !! TODO
         // Create mob actions initializer
         actions: []
@@ -49,10 +49,10 @@ const enragedA0Zix = function(_level, _pos, _rot) {
         id: _id,
         name: 'Enraged A-0 Zix',
         level: _level,
-        maxHealth: 50*_level,
-        health: 50*_level,
-        maxEnergy: 50*_level,
-        energy: 50*_level,
+        maxHealth: 25*_level,
+        health: 25*_level,
+        maxEnergy: 25*_level,
+        energy: 25*_level,
         attackSpeed: 1,
         rechargeSpeed: 1.5,
         aggroRange: 5,
@@ -69,8 +69,8 @@ const enragedA0Zix = function(_level, _pos, _rot) {
         healDelta: 5,
         runSpeed: 5,
         lootTime: 120, // 2 minutes
-        minDamage: 10,
-        maxDamage: 15,
+        minDamage: 2*level,
+        maxDamage: 3*level,
         // !! TODO
         // Create mob actions initializer
         actions: []

@@ -83,6 +83,17 @@ class Mob {
             this.__kill__();
         }
         this.__on_health_change__();
+
+        if (!this._data.inCombat) {
+            const _targetPos = new Vector3(this._game.getPlayer(_mobHitInfo.playerName).pos);
+            //this._waypoints = getPath(this._game.scene.waypointGraph, _mobPos, _targetPos);
+            //this._waypoint = this._waypoints[0];
+            this._waypoint = _targetPos;
+            this.__lookAt_target__();
+            this._rechargeTimer = this._data.rechargeSpeed;
+            this._data.inCombat = true;
+            this.__on_combat_state_change__();
+        }
     }
 
     /*

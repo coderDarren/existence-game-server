@@ -13,44 +13,44 @@ module.exports = (_game) => {
         //mobs
         [
             new Mob(_game, a0zix(2, {x:640,y:40,z:13.38}, {x:0,y:0,z:0})),
-            new Mob(_game, a0zix(2, {x:605.7,y:40,z:9.5}, {x:0,y:0,z:0})),
+            new Mob(_game, a0zix(1, {x:605.7,y:40,z:9.5}, {x:0,y:0,z:0})),
             new Mob(_game, a0zix(2, {x:612,y:40,z:49}, {x:0,y:0,z:0})),
 
-            new Mob(_game, a0zix(2, {x:584,y:40,z:68}, {x:0,y:0,z:0})),
+            new Mob(_game, a0zix(3, {x:584,y:40,z:68}, {x:0,y:0,z:0})),
             new Mob(_game, a0zix(2, {x:591,y:40,z:51}, {x:0,y:0,z:0})),
-            new Mob(_game, a0zix(2, {x:581,y:40,z:58}, {x:0,y:0,z:0})),
+            new Mob(_game, a0zix(1, {x:581,y:40,z:58}, {x:0,y:0,z:0})),
             new Mob(_game, a0zix(2, {x:578,y:40,z:63}, {x:0,y:0,z:0})),
-            new Mob(_game, a0zix(2, {x:589,y:40,z:60.6}, {x:0,y:0,z:0})),
+            new Mob(_game, a0zix(3, {x:589,y:40,z:60.6}, {x:0,y:0,z:0})),
             
             new Mob(_game, a0zix(2, {x:540,y:40,z:50}, {x:0,y:0,z:0})),
             new Mob(_game, a0zix(2, {x:565,y:40,z:53}, {x:0,y:0,z:0})),
-            new Mob(_game, a0zix(2, {x:561,y:40,z:62}, {x:0,y:0,z:0})),
+            new Mob(_game, a0zix(1, {x:561,y:40,z:62}, {x:0,y:0,z:0})),
             new Mob(_game, a0zix(2, {x:548,y:40,z:69}, {x:0,y:0,z:0})),
-            new Mob(_game, a0zix(2, {x:550,y:40,z:58}, {x:0,y:0,z:0})),
+            new Mob(_game, a0zix(3, {x:550,y:40,z:58}, {x:0,y:0,z:0})),
 
-            new Mob(_game, a0zix(2, {x:572,y:40,z:34}, {x:0,y:0,z:0})),
+            new Mob(_game, a0zix(3, {x:572,y:40,z:34}, {x:0,y:0,z:0})),
             new Mob(_game, a0zix(2, {x:565,y:40,z:35}, {x:0,y:0,z:0})),
             new Mob(_game, a0zix(2, {x:552,y:40,z:41}, {x:0,y:0,z:0})),
-            new Mob(_game, a0zix(2, {x:552,y:40,z:50}, {x:0,y:0,z:0})),
+            new Mob(_game, a0zix(1, {x:552,y:40,z:50}, {x:0,y:0,z:0})),
             new Mob(_game, a0zix(2, {x:561,y:40,z:41}, {x:0,y:0,z:0})),
-            new Mob(_game, a0zix(2, {x:559,y:40,z:32}, {x:0,y:0,z:0})),
+            new Mob(_game, a0zix(3, {x:559,y:40,z:32}, {x:0,y:0,z:0})),
             new Mob(_game, a0zix(2, {x:563,y:40,z:33.5}, {x:0,y:0,z:0})),
 
             new Mob(_game, a0zix(2, {x:535,y:40,z:35}, {x:0,y:0,z:0})),
-            new Mob(_game, a0zix(2, {x:542,y:40,z:36}, {x:0,y:0,z:0})),
+            new Mob(_game, a0zix(1, {x:542,y:40,z:36}, {x:0,y:0,z:0})),
             new Mob(_game, a0zix(2, {x:545,y:40,z:39}, {x:0,y:0,z:0})),
 
-            new Mob(_game, a0zix(2, {x:510,y:40,z:43}, {x:0,y:0,z:0})),
+            new Mob(_game, a0zix(3, {x:510,y:40,z:43}, {x:0,y:0,z:0})),
             new Mob(_game, a0zix(2, {x:513,y:40,z:42}, {x:0,y:0,z:0})),
-            new Mob(_game, a0zix(2, {x:507,y:40,z:47.6}, {x:0,y:0,z:0})),
+            new Mob(_game, a0zix(1, {x:507,y:40,z:47.6}, {x:0,y:0,z:0})),
             new Mob(_game, a0zix(2, {x:521,y:40,z:48.6}, {x:0,y:0,z:0})),
 
-            new Mob(_game, a0zix(2, {x:488,y:39.06,z:65.14}, {x:0,y:0,z:0})),
+            new Mob(_game, a0zix(3, {x:488,y:39.06,z:65.14}, {x:0,y:0,z:0})),
             new Mob(_game, a0zix(2, {x:482,y:38,z:68.2}, {x:0,y:0,z:0})),
-            new Mob(_game, a0zix(2, {x:476.5,y:38.26,z:60.38}, {x:0,y:0,z:0})),
+            new Mob(_game, a0zix(1, {x:476.5,y:38.26,z:60.38}, {x:0,y:0,z:0})),
             new Mob(_game, a0zix(2, {x:487.66,y:39.1,z:57.19}, {x:0,y:0,z:0})),
 
-            new Mob(_game, enragedA0Zix(3, {x:643.66,y:40.29,z:41.04}, {x:0,y:0,z:0})),
+            new Mob(_game, enragedA0Zix(5, {x:643.66,y:40.29,z:41.04}, {x:0,y:0,z:0})),
         ],
         waypointGraph
     );
