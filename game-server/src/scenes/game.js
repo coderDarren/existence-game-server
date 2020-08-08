@@ -3,6 +3,7 @@ const {Scene} = require('./scene.js');
 const Mob = require('../mobs/mob.js');
 const {
     a0zix,
+    toxicA0zix,
     enragedA0Zix
 } = require('../mobs/data.js');
 
@@ -12,6 +13,9 @@ module.exports = (_game) => {
     return new Scene(
         //mobs
         [
+            // ######################
+            // #### STARTER ZONE ####
+            // ######################
             new Mob(_game, a0zix(2, {x:640,y:40,z:13.38}, {x:0,y:0,z:0})),
             new Mob(_game, a0zix(1, {x:605.7,y:40,z:9.5}, {x:0,y:0,z:0})),
             new Mob(_game, a0zix(2, {x:612,y:40,z:49}, {x:0,y:0,z:0})),
@@ -51,6 +55,42 @@ module.exports = (_game) => {
             new Mob(_game, a0zix(2, {x:487.66,y:39.1,z:57.19}, {x:0,y:0,z:0})),
 
             new Mob(_game, enragedA0Zix(5, {x:643.66,y:40.29,z:41.04}, {x:0,y:0,z:0})),
+
+            // ###########################
+            // #### INTERMEDIATE ZONE ####
+            // ###########################
+            new Mob(_game, toxicA0zix(8, {x:487,y:40,z:-221}, {x:0,y:0,z:0})),
+            new Mob(_game, toxicA0zix(10, {x:492,y:40,z:-220}, {x:0,y:0,z:0})),
+            new Mob(_game, toxicA0zix(9, {x:493,y:40,z:-219}, {x:0,y:0,z:0})),
+            new Mob(_game, toxicA0zix(8, {x:499,y:40,z:-218}, {x:0,y:0,z:0})),
+            new Mob(_game, toxicA0zix(8, {x:503,y:40,z:-217}, {x:0,y:0,z:0})),
+            new Mob(_game, toxicA0zix(9, {x:551,y:40,z:-216}, {x:0,y:0,z:0})),
+            new Mob(_game, toxicA0zix(8, {x:532,y:40,z:-219}, {x:0,y:0,z:0})),
+            new Mob(_game, toxicA0zix(10, {x:591,y:40,z:-220}, {x:0,y:0,z:0})),
+            new Mob(_game, toxicA0zix(9, {x:491,y:40,z:-218}, {x:0,y:0,z:0})),
+            new Mob(_game, toxicA0zix(8, {x:488,y:40,z:-221}, {x:0,y:0,z:0})),
+            new Mob(_game, toxicA0zix(9, {x:521,y:40,z:-219}, {x:0,y:0,z:0})),
+            new Mob(_game, toxicA0zix(8, {x:555,y:40,z:-216}, {x:0,y:0,z:0})),
+            new Mob(_game, toxicA0zix(8, {x:567,y:40,z:-220}, {x:0,y:0,z:0})),
+            new Mob(_game, toxicA0zix(8, {x:589,y:40,z:-219}, {x:0,y:0,z:0})),
+            new Mob(_game, toxicA0zix(8, {x:575,y:40,z:-219}, {x:0,y:0,z:0})),
+            new Mob(_game, toxicA0zix(9, {x:571,y:40,z:-218}, {x:0,y:0,z:0})),
+            new Mob(_game, toxicA0zix(10, {x:561,y:40,z:-217}, {x:0,y:0,z:0})),
+            new Mob(_game, toxicA0zix(8, {x:599,y:40,z:-220}, {x:0,y:0,z:0})),
+            new Mob(_game, toxicA0zix(9, {x:512,y:40,z:-219}, {x:0,y:0,z:0})),
+            new Mob(_game, toxicA0zix(8, {x:519,y:40,z:-216}, {x:0,y:0,z:0})),
+            new Mob(_game, toxicA0zix(8, {x:529,y:40,z:-220}, {x:0,y:0,z:0})),
+            new Mob(_game, toxicA0zix(10, {x:531,y:40,z:-221}, {x:0,y:0,z:0})),
+            new Mob(_game, toxicA0zix(9, {x:548,y:40,z:-220}, {x:0,y:0,z:0})),
+            new Mob(_game, toxicA0zix(8, {x:559,y:40,z:-219}, {x:0,y:0,z:0})),
+            new Mob(_game, toxicA0zix(8, {x:543,y:40,z:-218}, {x:0,y:0,z:0})),
+            new Mob(_game, toxicA0zix(10, {x:537,y:40,z:-217}, {x:0,y:0,z:0})),
+            new Mob(_game, toxicA0zix(9, {x:578,y:40,z:-220}, {x:0,y:0,z:0})),
+            new Mob(_game, toxicA0zix(10, {x:584,y:40,z:-216}, {x:0,y:0,z:0})),
+            new Mob(_game, toxicA0zix(9, {x:568,y:40,z:-217}, {x:0,y:0,z:0})),
+            new Mob(_game, toxicA0zix(9, {x:600,y:40,z:-215}, {x:0,y:0,z:0})),
+
+            new Mob(_game, enragedA0Zix(15, {x:569.34,y:40,z:-243.62}, {x:0,y:0,z:0})),
         ],
         waypointGraph
     );

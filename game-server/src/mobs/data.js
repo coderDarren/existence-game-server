@@ -8,7 +8,8 @@ const {Vector3} = require('../util/vector.js');
  */
 
 const a0zix = function(_level, _pos, _rot) {
-    const _id = crypto.randomBytes(4).toString('hex');
+    const _id = crypto.randomBytes(5).toString('hex');
+    _rot.y = Math.random() * 360;
     
     return {
         id: _id,
@@ -43,8 +44,46 @@ const a0zix = function(_level, _pos, _rot) {
     }
 }
 
+const toxicA0zix = function(_level, _pos, _rot) {
+    const _id = crypto.randomBytes(5).toString('hex');
+    _rot.y = Math.random() * 360;
+    
+    return {
+        id: _id,
+        name: 'Toxic A-0 Zix',
+        level: _level,
+        maxHealth: 10*_level,
+        health: 10*_level,
+        maxEnergy: 10*_level,
+        energy: 10*_level,
+        attackSpeed: 1,
+        rechargeSpeed: 1.5,
+        aggroRange: 15,
+        retreatRange: 50,
+        attackRange: 2,
+        inCombat: false,
+        inAttackRange: false,
+        respawnTime: 120, // in seconds
+        xpReward: 25*_level,
+        xpRewardVariance: 10*_level,
+        pos: new Vector3(_pos).obj,
+        rot: new Vector3(_rot).obj,
+        inCombat: false,
+        healDelta: 5,
+        runSpeed: 3,
+        lootTime: 120, // 2 minutes
+        minDamage: 2*_level,
+        maxDamage: 4*_level,
+        hitRate: 0.75,
+        // !! TODO
+        // Create mob actions initializer
+        actions: []
+    }
+}
+
 const enragedA0Zix = function(_level, _pos, _rot) {
-    const _id = crypto.randomBytes(4).toString('hex');
+    const _id = crypto.randomBytes(5).toString('hex');
+    _rot.y = Math.random() * 360;
     
     return {
         id: _id,
@@ -81,5 +120,6 @@ const enragedA0Zix = function(_level, _pos, _rot) {
 
 module.exports = {
     a0zix,
-    enragedA0Zix
+    enragedA0Zix,
+    toxicA0zix
 }
