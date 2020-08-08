@@ -70,7 +70,7 @@ const toxicA0zix = function(_level, _pos, _rot) {
         rot: new Vector3(_rot).obj,
         inCombat: false,
         healDelta: 5,
-        runSpeed: 3,
+        runSpeed: 5,
         lootTime: 120, // 2 minutes
         minDamage: 2*_level,
         maxDamage: 4*_level,
