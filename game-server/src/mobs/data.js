@@ -64,7 +64,7 @@ const toxicA0zix = function(_level, _pos, _rot) {
         inCombat: false,
         inAttackRange: false,
         respawnTime: 120, // in seconds
-        xpReward: 25*_level,
+        xpReward: 50*_level,
         xpRewardVariance: 10*_level,
         pos: new Vector3(_pos).obj,
         rot: new Vector3(_rot).obj,
