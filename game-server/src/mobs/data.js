@@ -118,8 +118,84 @@ const enragedA0Zix = function(_level, _pos, _rot) {
     }
 }
 
+const droid = function(_level, _pos, _rot) {
+    const _id = crypto.randomBytes(5).toString('hex');
+    _rot.y = Math.random() * 360;
+    
+    return {
+        id: _id,
+        name: 'Droid',
+        level: _level,
+        maxHealth: 40*_level,
+        health: 40*_level,
+        maxEnergy: 20*_level,
+        energy: 20*_level,
+        attackSpeed: 1,
+        rechargeSpeed: 1.5,
+        aggroRange: 8,
+        retreatRange: 25,
+        attackRange: 5,
+        inCombat: false,
+        inAttackRange: false,
+        respawnTime: 120, // in seconds
+        xpReward: 50*_level,
+        xpRewardVariance: 10*_level,
+        pos: new Vector3(_pos).obj,
+        rot: new Vector3(_rot).obj,
+        inCombat: false,
+        healDelta: 5,
+        runSpeed: 2,
+        lootTime: 120, // 2 minutes
+        minDamage: 1*_level,
+        maxDamage: 2*_level,
+        hitRate: 0.75,
+        // !! TODO
+        // Create mob actions initializer
+        actions: []
+    }
+}
+
+const enragedDroid = function(_level, _pos, _rot) {
+    const _id = crypto.randomBytes(5).toString('hex');
+    _rot.y = Math.random() * 360;
+    
+    return {
+        id: _id,
+        name: 'Sentient Droid',
+        level: _level,
+        maxHealth: 150*_level,
+        health: 150*_level,
+        maxEnergy: 50*_level,
+        energy: 50*_level,
+        attackSpeed: 1,
+        rechargeSpeed: 1.5,
+        aggroRange: 8,
+        retreatRange: 50,
+        attackRange: 10,
+        inCombat: false,
+        inAttackRange: false,
+        respawnTime: 120, // in seconds
+        xpReward: 75*_level,
+        xpRewardVariance: 10*_level,
+        pos: new Vector3(_pos).obj,
+        rot: new Vector3(_rot).obj,
+        inCombat: false,
+        healDelta: 5,
+        runSpeed: 5,
+        lootTime: 120, // 2 minutes
+        minDamage: 1*_level,
+        maxDamage: 2*_level,
+        hitRate: 0.9,
+        // !! TODO
+        // Create mob actions initializer
+        actions: []
+    }
+}
+
 module.exports = {
     a0zix,
     enragedA0Zix,
-    toxicA0zix
+    toxicA0zix,
+    droid,
+    enragedDroid
 }
