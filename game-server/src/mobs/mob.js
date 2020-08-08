@@ -57,6 +57,7 @@ class Mob {
             this.__attack_target__();
         } else if (!_mobPos.equals(this._defaultPos)) {
             this.__retreat__();
+            this.__patrol__(); // this will look for new targets while running away
             this.__heal_over_time__();
         } else if (!this._dead) { // alive
             this.__patrol__();
@@ -356,6 +357,13 @@ class Mob {
 
         if (_player.health == 0) {
             // notify nearby players..
+            //this._waypoints = getPath(this._game.scene.waypointGraph, _mobPos, this._defaultPos);
+            //this._waypoint = this._waypoints[0];
+            this._waypoint = this._defaultPos;
+            this.__lookAt_target__();
+            this._data.inCombat = false;
+            this._target = null;
+            this.__on_combat_state_change__();
         }
     }
 
