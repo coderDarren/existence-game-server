@@ -206,7 +206,11 @@ class Mob {
             this._attackTimer += this._game.deltaTime;
             if (this._attackTimer > this._data.attackSpeed) {
                 // send damage info to all nearby players
-                this.__on_hit_player__(this._target, Math.floor(this._data.minDamage + Math.random() * this._data.maxDamage));
+                var _dmg = Math.floor(this._data.minDamage + Math.random() * this._data.maxDamage);
+                if (Math.random() < 1 - this._data.hitRate) {
+                    _dmg = 0;
+                }
+                this.__on_hit_player__(this._target, _dmg);
 
                 // reset timers
                 this._attackTimer = 0;
