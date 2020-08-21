@@ -4,6 +4,12 @@ const {Vector3, LowPrecisionSimpleVector3} = require('./util/vector.js');
 const {filter} = require('lodash');
 
 const NETMSG_PLAYER_DATA = "PLAYER";
+const NETMSG_PLAYER_TRANSFORM_CHANGE = "PLAYER_TRANSFORM_CHANGE";
+const NETMSG_PLAYER_ATTACK_START = "PLAYER_ATTACK_START";
+const NETMSG_PLAYER_ATTACK_STOP = "PLAYER_ATTACK_STOP";
+const NETMSG_PLAYER_USE_SPECIAL = "PLAYER_USE_SPECIAL";
+const NETMSG_PLAYER_HEALTH_CHANGE = "PLAYER_HEALTH_CHANGE";
+const NETMSG_PLAYER_LVL_CHANGE = "PLAYER_LVL_CHANGE";
 const NETMSG_HIT_MOB = "HIT_MOB";
 const NETMSG_INVENTORY_CHANGED = "INVENTORY_CHANGE";
 const NETMSG_ADD_INVENTORY = "ADD_INVENTORY";
@@ -76,6 +82,11 @@ class Player {
         }
     }
 
+    /*
+     * This functions returns a mapped list of entities closest to the player.
+     * The returned array is used to determine which entities need to be notified about this player's state.
+     * See the update function above.
+     */
     __handle_nearby_objects__(_output, _state, _objects, id, _range, _evt_on_spawn_, _evt_on_exit_) {
         // clear the state
         Object.keys(_state).forEach((_key, _index) => {

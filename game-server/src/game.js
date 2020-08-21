@@ -138,6 +138,9 @@ class Game
     __emit_tailored_instance__() {
         for (var i in this._instance.players) {
 
+            // Here, each player is able to send regular updates
+            // This minimally includes position and rotation info
+            
             const _player = this._instance.players[i];
             
             const _instance = {
@@ -145,9 +148,12 @@ class Game
                 mobs: this.__obj_data_map__(_player.nearbyMobs)
             };
 
+            // Ultimately we need to replace with position and animation updates
+            // The NETMSG_INSTANCE data includes ALL player data
             _player.socket.emit(NETMSG_INSTANCE, {
                 message: JSON.stringify(_instance)
             });
+
         }
     }
 

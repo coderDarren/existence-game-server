@@ -32,7 +32,7 @@ const a0zix = function(_level, _pos, _rot) {
         pos: new Vector3(_pos).obj,
         rot: new Vector3(_rot).obj,
         inCombat: false,
-        healDelta: 5,
+        healDelta: 50,
         runSpeed: 3,
         lootTime: 120, // 2 minutes
         minDamage: 1*_level,
@@ -69,7 +69,7 @@ const toxicA0zix = function(_level, _pos, _rot) {
         pos: new Vector3(_pos).obj,
         rot: new Vector3(_rot).obj,
         inCombat: false,
-        healDelta: 5,
+        healDelta: 50,
         runSpeed: 5,
         lootTime: 120, // 2 minutes
         minDamage: 2*_level,
@@ -106,7 +106,7 @@ const enragedA0Zix = function(_level, _pos, _rot) {
         pos: new Vector3(_pos).obj,
         rot: new Vector3(_rot).obj,
         inCombat: false,
-        healDelta: 5,
+        healDelta: 50,
         runSpeed: 5,
         lootTime: 120, // 2 minutes
         minDamage: 2*_level,
@@ -143,7 +143,7 @@ const droid = function(_level, _pos, _rot) {
         pos: new Vector3(_pos).obj,
         rot: new Vector3(_rot).obj,
         inCombat: false,
-        healDelta: 5,
+        healDelta: 50,
         runSpeed: 2,
         lootTime: 120, // 2 minutes
         minDamage: 1*_level,
@@ -180,7 +180,7 @@ const enragedDroid = function(_level, _pos, _rot) {
         pos: new Vector3(_pos).obj,
         rot: new Vector3(_rot).obj,
         inCombat: false,
-        healDelta: 5,
+        healDelta: 50,
         runSpeed: 5,
         lootTime: 120, // 2 minutes
         minDamage: 1*_level,
