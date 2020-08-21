@@ -11,7 +11,7 @@ class API {
     }
 
     updateInventoryItemSlot(_data) {
-        this._rest.postDataWithCallbacks(`${this._apiUrl}updateInventory`, _data);
+        this._rest.postDataWithCallbacks(`${this._apiUrl}updateInventory`, _data, (_success) => console.log(_success), (_err) => console.log(_err));
     }
 
     addInventoryItem(_data, _onSuccess, _onFail) {
