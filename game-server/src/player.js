@@ -3,6 +3,7 @@ const API = require('./util/api.js');
 const {Vector3, LowPrecisionSimpleVector3} = require('./util/vector.js');
 const {filter} = require('lodash');
 
+const NETMSG_CHAT = "CHAT";
 const NETMSG_PLAYER_DATA = "PLAYER";
 const NETMSG_PLAYER_TRANSFORM_CHANGE = "PLAYER_TRANSFORM_CHANGE";
 const NETMSG_PLAYER_ATTACK_START = "PLAYER_ATTACK_START";
@@ -30,6 +31,10 @@ const NETMSG_PLAYER_EQUIP_SUCCESS = "PLAYER_EQUIP_SUCCESS";
 const NETMSG_PLAYER_EQUIP_FAILURE = "PLAYER_EQUIP_FAILURE";
 const NETMSG_PLAYER_UNEQUIP_SUCCESS = "PLAYER_UNEQUIP_SUCCESS";
 const NETMSG_PLAYER_UNEQUIP_FAILURE = "PLAYER_UNEQUIP_FAILURE";
+const NETMSG_INTERACT_SHOP = 'NETMSG_INTERACT_SHOP';
+const NETMSG_INTERACT_SHOP_SUCCESS = 'NETMSG_INTERACT_SHOP_SUCCESS';
+const NETMSG_TRADE_SHOP = 'NETMSG_TRADE_SHOP';
+const NETMSG_TRADE_SHOP_SUCCESS = 'NETMSG_TRADE_SHOP_SUCCESS';
 
 class Player {
     
@@ -59,6 +64,8 @@ class Player {
         this.__detect_stationary__ = this.__detect_stationary__.bind(this);
         this.__on_equip__ = this.__on_equip__.bind(this);
         this.__on_unequip__ = this.__on_unequip__.bind(this);
+        this.__on_interact_shop__ = this.__on_interact_shop__.bind(this);
+        this.__on_trade_shop__ = this.__on_trade_shop__.bind(this);
         this.__send_message_to_nearby_players__ = this.__send_message_to_nearby_players__.bind(this);
 
         this.__hook__();
@@ -171,8 +178,6 @@ class Player {
             inventoryLoc: _data.inventoryLoc
         });
 
-        console.log(_res);
-
         switch (_res.data.statusCode) {
             case 200: this.__send_message_to_nearby_players__(NETMSG_PLAYER_EQUIP_SUCCESS, {playerName:this._data.player.name, playerID:this._data.player.id,itemID:_data.itemID, inventoryLoc: _data.inventoryLoc}); break; // success
             case 1401: this._socket.emit(NETMSG_PLAYER_EQUIP_FAILURE, {message:`You cannot equip an item you do not own.`}); break; // Item does not exist in the player's inventory
@@ -190,8 +195,6 @@ class Player {
             itemID: _data.itemID
         });
 
-        console.log(_res);
-
         switch (_res.statusCode) {
             case 200: 
                 const _msg = JSON.parse(_res.data.message);
@@ -200,6 +203,36 @@ class Player {
             case 1401: this._socket.emit(NETMSG_PLAYER_UNEQUIP_FAILURE, {message:`You cannot unequip an item that is not equipped.`}); break; // Item does not exist in the player's equipment
             case 1402: this._socket.emit(NETMSG_PLAYER_UNEQUIP_FAILURE, {message:`You can not unequip this item.`}); break; // Item is not equippable
             default: this._socket.emit(NETMSG_PLAYER_UNEQUIP_FAILURE, {message:`Unable to unequip this item.`}); break; // internal server error
+        }
+    }
+
+    __on_interact_shop__(_data) {
+        const _shopId = _data.id;
+        const _shop = this._game.getShopTerminal(_shopId);
+        // compare distances
+        const _dist = new Vector3(_shop.pos).distanceTo(new Vector3(this._data.player.pos));
+        if (_dist > 3) {
+            // send out-of-range message
+            this._socket.emit(NETMSG_CHAT, {message:'<color=#fff>You are out of range.</color>'});
+        } else {
+            // send shop population
+            this._socket.emit(NETMSG_INTERACT_SHOP_SUCCESS, {message:JSON.stringify({id:_shopId,itemData:_shop.population})});
+        }
+    }
+
+    async __on_trade_shop__(_data) {
+        console.log(`trading ${JSON.stringify(_data)}`)
+        const _res = await API.shopTerminalTrade({
+            id: this._data.account.id,
+            apiKey: this._data.account.apiKey,
+            playerID: this._data.player.id,
+            ..._data
+        });
+
+        console.log(_res);
+
+        if (_res.data.statusCode == 200) {
+            this._socket.emit(NETMSG_TRADE_SHOP_SUCCESS, _res.data);
         }
     }
 
@@ -278,6 +311,8 @@ class Player {
 
         this._socket.on(NETMSG_PLAYER_EQUIP, this.__on_equip__);
         this._socket.on(NETMSG_PLAYER_UNEQUIP, this.__on_unequip__);
+        this._socket.on(NETMSG_INTERACT_SHOP, this.__on_interact_shop__);
+        this._socket.on(NETMSG_TRADE_SHOP, this.__on_trade_shop__);
     }
 
     __send_message_to_nearby_players__(_evt, _msg, _includeThisPlayer) {

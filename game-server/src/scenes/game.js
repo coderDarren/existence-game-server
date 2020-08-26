@@ -1,6 +1,8 @@
 'use strict';
 const {Scene} = require('./scene.js');
+const {ItemType} = require('../definitions/enum.js');
 const Mob = require('../mobs/mob.js');
+const ShopTerminal = require('../shops/shopTerminal.js');
 const {
     a0zix,
     toxicA0zix,
@@ -105,6 +107,11 @@ module.exports = (_game) => {
 
             new Mob(_game, enragedDroid(20, {x:594,y:40,z:-106}, {x:0,y:0,z:0})),
         ],
-        waypointGraph
+        waypointGraph,
+        // shops
+        [
+            new ShopTerminal(_game, {id:0,pos:{x:741.01,y:48.73,z:-368.20},refreshRate:3600,shopType:ItemType.WEAPON,lvlRange:{min:1,max:20}}),
+            new ShopTerminal(_game, {id:1,pos:{x:745.32,y:48.73,z:-368.20},refreshRate:3600,shopType:ItemType.ARMOR,lvlRange:{min:1,max:20}})
+        ]
     );
 };

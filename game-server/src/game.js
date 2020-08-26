@@ -45,6 +45,7 @@ class Game
         // updaters
         this.__update_mobs__ = this.__update_mobs__.bind(this);
         this.__update_players__ = this.__update_players__.bind(this);
+        this.__update_shops__ = this.__update_shops__.bind(this);
         this.__emit_tailored_instance__ = this.__emit_tailored_instance__.bind(this);
 
         this.__hook_server__();
@@ -60,6 +61,7 @@ class Game
         // update entities
         this.__update_players__();
         this.__update_mobs__();
+        this.__update_shops__();
 
         // emit tailored instance for each player
         this.__emit_tailored_instance__();
@@ -131,6 +133,10 @@ class Game
         return find(this._mobs, _m => {return _m.data.id == _id;});
     }
 
+    getShopTerminal(_id) {
+        return find(this._scene.shops, _s => {return _s.id == _id;});
+    }
+
     /*
      * Emits a specific instance of nearby players and nearby mobs for each player..
      * ..based on distance
@@ -174,6 +180,12 @@ class Game
     __update_players__() {
         for (var i = 0; i < this._players.length; i++) {
             this._players[i].update();
+        }
+    }
+
+    __update_shops__() {
+        for (var i = 0; i < this._scene.shops.length; i++) {
+            this._scene.shops[i].update();
         }
     }
 
@@ -239,6 +251,10 @@ class Game
 
     get scene() {
         return this._scene;
+    }
+
+    get shops() {
+        return this._scene.shops;
     }
 
     get mobs() {

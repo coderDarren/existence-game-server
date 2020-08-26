@@ -35,6 +35,16 @@ class API {
         const _res = await this._rest.postData(`${this._apiUrl}unequip`, _data);
         return _res;
     }
+
+    async getShopItems(_itemType) {
+        const _res = await this._rest.get(`${this._apiUrl}getItems?shopBuyable=true&itemType=${_itemType}`);
+        return _res;
+    }
+
+    async shopTerminalTrade(_data) {
+        const _res = await this._rest.postData(`${this._apiUrl}shopTerminalTrade`, _data);
+        return _res;
+    }
 }
 
 module.exports = new API();
