@@ -2,6 +2,7 @@
 const API = require('./util/api.js');
 const {Vector3, LowPrecisionSimpleVector3} = require('./util/vector.js');
 const {filter} = require('lodash');
+const {accumulate} = require('./util/func.js');
 
 const NETMSG_CHAT = "CHAT";
 const NETMSG_PLAYER_DATA = "PLAYER";
@@ -16,6 +17,8 @@ const NETMSG_INVENTORY_CHANGED = "INVENTORY_CHANGE";
 const NETMSG_ADD_INVENTORY = "ADD_INVENTORY";
 const NETMSG_ADD_INVENTORY_SUCCESS = "ADD_INVENTORY_SUCCESS";
 const NETMSG_ADD_INVENTORY_FAILURE = "ADD_INVENTORY_FAILURE";
+const NETMSG_RM_INVENTORY_SUCCESS = "RM_INVENTORY_SUCCESS";
+const NETMSG_RM_INVENTORY_FAILURE = "RM_INVENTORY_FAILURE";
 const NETMSG_MOB_SPAWN = "MOB_SPAWN";
 const NETMSG_MOB_EXIT = "MOB_EXIT";
 const NETMSG_PLAYER_SPAWN = "PLAYER_SPAWN";
@@ -55,20 +58,45 @@ class Player {
         this._rotChange = 0;
         this._stationaryTimer = 0;
 
-        this.__hook__ = this.__hook__.bind(this);
-        this.__handle_nearby_objects__ = this.__handle_nearby_objects__.bind(this);
-        this.__on_mob_spawn__ = this.__on_mob_spawn__.bind(this);
-        this.__on_mob_exit__ = this.__on_mob_exit__.bind(this);
-        this.__on_player_spawn__ = this.__on_player_spawn__.bind(this);
-        this.__on_player_exit__ = this.__on_player_exit__.bind(this);
-        this.__detect_stationary__ = this.__detect_stationary__.bind(this);
+        // incoming events from player
+        this.__on_player_updated__ = this.__on_player_updated__.bind(this);
+        this.__on_player_hit_mob__ = this.__on_player_hit_mob__.bind(this);
+        this.__on_inventory_change__ = this.__on_inventory_change__.bind(this);
+        this.__on_player_loot_mob__ = this.__on_player_loot_mob__.bind(this);
         this.__on_equip__ = this.__on_equip__.bind(this);
         this.__on_unequip__ = this.__on_unequip__.bind(this);
         this.__on_interact_shop__ = this.__on_interact_shop__.bind(this);
         this.__on_trade_shop__ = this.__on_trade_shop__.bind(this);
+        this.__add_inventory__ = this.__add_inventory__.bind(this);
+        this.__hook__ = this.__hook__.bind(this);
+
+        // player emit events
+        this.__on_mob_spawn__ = this.__on_mob_spawn__.bind(this);
+        this.__on_mob_exit__ = this.__on_mob_exit__.bind(this);
+        this.__on_player_spawn__ = this.__on_player_spawn__.bind(this);
+        this.__on_player_exit__ = this.__on_player_exit__.bind(this);
+
+        // nearby entity processing
+        this.__handle_nearby_objects__ = this.__handle_nearby_objects__.bind(this);
+        this.__detect_stationary__ = this.__detect_stationary__.bind(this);
         this.__send_message_to_nearby_players__ = this.__send_message_to_nearby_players__.bind(this);
 
+        // other 
+        this.__remove_inventory__ = this.__remove_inventory__.bind(this);
+
         this.__hook__();
+    }
+
+    __hook__() {
+        this._socket.on(NETMSG_PLAYER_DATA, this.__on_player_updated__);
+        this._socket.on(NETMSG_HIT_MOB, this.__on_player_hit_mob__)
+        this._socket.on(NETMSG_INVENTORY_CHANGED, this.__on_inventory_change__);
+        this._socket.on(NETMSG_ADD_INVENTORY, this.__add_inventory__);
+        this._socket.on(NETMSG_PLAYER_LOOT_MOB, this.__on_player_loot_mob__);
+        this._socket.on(NETMSG_PLAYER_EQUIP, this.__on_equip__);
+        this._socket.on(NETMSG_PLAYER_UNEQUIP, this.__on_unequip__);
+        this._socket.on(NETMSG_INTERACT_SHOP, this.__on_interact_shop__);
+        this._socket.on(NETMSG_TRADE_SHOP, this.__on_trade_shop__);
     }
 
     update() {
@@ -168,6 +196,42 @@ class Player {
         this._socket.emit(NETMSG_PLAYER_EXIT, {message:_playerName});
     }
 
+    __add_inventory__(_data) {
+        API.addInventoryItem({
+            id: this._data.account.id,
+            apiKey: this._data.account.apiKey,
+            playerID: this._data.player.id,
+            itemID: _data.id,
+            lvl: _data.level
+        }, _success => {
+            this._socket.emit(NETMSG_ADD_INVENTORY_SUCCESS, {message:_success.message});
+        }, _failure => {
+            this._socket.emit(NETMSG_ADD_INVENTORY_FAILURE, {message:_failure.message});
+        });
+    }
+
+    async __remove_inventory__(_data) {
+        const _res = await API.removeInventory({
+            auth: {
+                id: this._data.account.id,
+                apiKey: this._data.account.apiKey,
+                playerID: this._data.player.id
+            },
+            elementKey: {
+                playerID: this._data.player.id,
+                itemID: _data.itemID,
+                loc: _data.loc
+            }
+        });
+        if (_res.statusCode == 200) {
+            // succeed
+            this._socket.emit(NETMSG_RM_INVENTORY_SUCCESS, {message:JSON.stringify({itemID: _data.itemID, inventoryLoc: _data.loc})});
+        } else {
+            // fail
+            this._socket.emit(NETMSG_RM_INVENTORY_FAILURE, {message:JSON.stringify({itemID: _data.itemID, inventoryLoc: _data.loc})});
+        }
+    }
+
     async __on_equip__(_data) {
         // check if equipment already exists
         const _res = await API.equip({
@@ -212,7 +276,6 @@ class Player {
         // compare distances
         const _dist = new Vector3(_shop.pos).distanceTo(new Vector3(this._data.player.pos));
         if (_dist > 3) {
-            // send out-of-range message
             this._socket.emit(NETMSG_CHAT, {message:'<color=#fff>You are out of range.</color>'});
         } else {
             // send shop population
@@ -220,99 +283,85 @@ class Player {
         }
     }
 
-    async __on_trade_shop__(_data) {
-        console.log(`trading ${JSON.stringify(_data)}`)
-        const _res = await API.shopTerminalTrade({
+    __on_trade_shop__(_data) {
+        console.log(`trading ${JSON.stringify(_data)}`);
+        
+        const _netTransfer = accumulate(_data.sell, 'price') - accumulate(_data.buy, 'price');
+        console.log(`Player has ${this._data.player.tix} TIX, and the net transfer of this trade is ${_netTransfer} TIX.`);
+
+        if (this._data.player.tix + _netTransfer < 0) {
+            this._socket.emit(NETMSG_CHAT, {message:'<color=#fff>You do not have enough TIX.</color>'});
+        }
+        
+        // add bought inventory
+        for (var i in _data.buy) {
+            this.__add_inventory__({id: _data.buy[i].itemID, level: _data.buy[i].level});
+        }
+
+        // remove sold inventory
+        for (var i in _data.sell) {
+            this.__remove_inventory__({itemID: _data.sell[i].itemID, loc: _data.sell[i].inventoryLoc});
+        }
+
+        this._data.player.tix -= _netTransfer;
+        // update player 
+
+        this._socket.emit(NETMSG_TRADE_SHOP_SUCCESS, {message:JSON.stringify({tix:this._data.player.tix,transactionId:_data.transactionId})});
+    }
+
+    __on_player_updated__(_player) {
+        this._data.player = _player;
+            this._game.updatePlayer(this);
+    }
+
+    __on_player_hit_mob__(_mobHitInfo) {
+        _mobHitInfo.playerName = this._data.player.name;
+        this._game.onPlayerHitMob(this, _mobHitInfo);
+        this._socket.emit(NETMSG_PLAYER_HIT_MOB_CONFIRMATION, {
+            message: JSON.stringify(_mobHitInfo)
+        });
+    }
+
+    __on_inventory_change__(_inventory) {
+        if (!this._data.account) return;
+        API.updateInventoryItemSlot({
             id: this._data.account.id,
             apiKey: this._data.account.apiKey,
             playerID: this._data.player.id,
-            ..._data
+            slotLoc: _inventory.slotLoc,
+            slotID: _inventory.slotID
         });
-
-        console.log(_res);
-
-        if (_res.data.statusCode == 200) {
-            this._socket.emit(NETMSG_TRADE_SHOP_SUCCESS, _res.data);
-        }
     }
 
-    __hook__() {
-        // tell server to update this player
-        this._socket.on(NETMSG_PLAYER_DATA, function(_player) {
-            this._data.player = _player;
-            this._game.updatePlayer(this);
-        }.bind(this));
-        
-        this._socket.on(NETMSG_HIT_MOB, function(_mobHitInfo) {
-            _mobHitInfo.playerName = this._data.player.name;
-            this._game.onPlayerHitMob(this, _mobHitInfo);
-            this._socket.emit(NETMSG_PLAYER_HIT_MOB_CONFIRMATION, {
-                message: JSON.stringify(_mobHitInfo)
-            });
-        }.bind(this))
+    __on_player_loot_mob__(_lootInfo) {
+        const _mob = this._game.getMob(_lootInfo.mobID);
+        if (!_mob) return;
+        const _loot = _mob.tryLoot(_lootInfo.itemID);
+        if (_loot == -1) return;
+        if (_loot == -2) {
+            // loot is locked
+            this._socket.emit(NETMSG_MOB_LOOT_LOCKED, {message:_lootInfo});
+            return;
+        }
 
-        this._socket.on(NETMSG_INVENTORY_CHANGED, function(_updateInfo) {
-            if (!this._data.account) return;
-            API.updateInventoryItemSlot({
-                id: this._data.account.id,
-                apiKey: this._data.account.apiKey,
+        API.addInventoryItem({
+            id: this._data.account.id,
+            apiKey: this._data.account.apiKey,
+            playerID: this._data.player.id,
+            itemID: _lootInfo.itemID,
+            lvl: _loot.def.level
+        }, _success => {
+            const _mobLootData = {
                 playerID: this._data.player.id,
-                slotLoc: _updateInfo.slotLoc,
-                slotID: _updateInfo.slotID
-            });
-        }.bind(this));
-
-        this._socket.on(NETMSG_ADD_INVENTORY, function(_item) {
-            API.addInventoryItem({
-                id: this._data.account.id,
-                apiKey: this._data.account.apiKey,
-                playerID: this._data.player.id,
-                itemID: _item.id,
-                lvl: _item.level
-            }, _success => {
-                this._socket.emit(NETMSG_ADD_INVENTORY_SUCCESS, {message:_success.message});
-            }, _failure => {
-                this._socket.emit(NETMSG_ADD_INVENTORY_FAILURE, {message:_failure.message});
-            });
-        }.bind(this));
-
-        this._socket.on(NETMSG_PLAYER_LOOT_MOB, function(_lootInfo) {
-            const _mob = this._game.getMob(_lootInfo.mobID);
-            if (!_mob) return;
-            const _loot = _mob.tryLoot(_lootInfo.itemID);
-            if (_loot == -1) return;
-            if (_loot == -2) {
-                // loot is locked
-                this._socket.emit(NETMSG_MOB_LOOT_LOCKED, {message:_lootInfo});
-                return;
-            }
-
-            API.addInventoryItem({
-                id: this._data.account.id,
-                apiKey: this._data.account.apiKey,
-                playerID: this._data.player.id,
-                itemID: _lootInfo.itemID,
-                lvl: _loot.def.level
-            }, _success => {
-                const _mobLootData = {
-                    playerID: this._data.player.id,
-                    mobID: _lootInfo.mobID,
-                    itemID: _loot.def.id
-                };
-                console.log(JSON.parse(_success.message));
-                this._socket.emit(NETMSG_ADD_INVENTORY_SUCCESS, {message:_success.message});
-                //this._socket.emit(NETMSG_MOB_LOOTED, {message:JSON.stringify(_mobLootData)});
-                this.__send_message_to_nearby_players__(NETMSG_MOB_LOOTED, _mobLootData, false);
-            }, _failure => {
-                _mob.restoreLoot(_loot.id);
-            });
-
-        }.bind(this));
-
-        this._socket.on(NETMSG_PLAYER_EQUIP, this.__on_equip__);
-        this._socket.on(NETMSG_PLAYER_UNEQUIP, this.__on_unequip__);
-        this._socket.on(NETMSG_INTERACT_SHOP, this.__on_interact_shop__);
-        this._socket.on(NETMSG_TRADE_SHOP, this.__on_trade_shop__);
+                mobID: _lootInfo.mobID,
+                itemID: _loot.def.id
+            };
+            this._socket.emit(NETMSG_ADD_INVENTORY_SUCCESS, {message:_success.message});
+            //this._socket.emit(NETMSG_MOB_LOOTED, {message:JSON.stringify(_mobLootData)});
+            this.__send_message_to_nearby_players__(NETMSG_MOB_LOOTED, _mobLootData, false);
+        }, _failure => {
+            _mob.restoreLoot(_loot.id);
+        });
     }
 
     __send_message_to_nearby_players__(_evt, _msg, _includeThisPlayer) {

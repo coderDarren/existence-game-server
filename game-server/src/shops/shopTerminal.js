@@ -37,7 +37,15 @@ class ShopTerminal {
     }
 
     __populate__() {
-        this._population = map(this._items, i => {return JSON.stringify(i);});
+        this._population = [];
+        for (var i in this._items) {
+            const _item = JSON.parse(JSON.stringify(this._items[i]));
+            // 5 of each item, random qls
+            for (var x = 0; x <= 4; x++) {
+                _item.def.level = this._lvlRange.min + Math.floor(Math.random()*(this._lvlRange.max - this._lvlRange.min)+1);
+                this._population.push(JSON.stringify(_item));
+            }
+        }
     }
 
     get population() {
