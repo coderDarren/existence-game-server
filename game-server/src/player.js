@@ -42,6 +42,11 @@ const NETMSG_TRADE_SHOP_SUCCESS = 'NETMSG_TRADE_SHOP_SUCCESS';
 class Player {
     
     constructor(_game, _data, _socket) {
+        _data = {
+            ..._data.player,
+            ..._data
+        }
+        delete _data.player;
         this._game = _game;
         this._data = _data;
         this._socket = _socket;
@@ -51,15 +56,17 @@ class Player {
         this._nearbyPlayersState = {};
         this._dead = false;
 
+        console.log(_data);
+
         // these values help us determine if the player is stationary or not
-        this._lastFramePos = this._data.player.pos;
-        this._lastFrameRot = this._data.player.rot;
+        this._lastFramePos = this._data.transform.pos;
+        this._lastFrameRot = this._data.transform.rot;
         this._posChange = 0;
         this._rotChange = 0;
         this._stationaryTimer = 0;
 
         // incoming events from player
-        this.__on_player_updated__ = this.__on_player_updated__.bind(this);
+        this.__on_transform_updated__ = this.__on_transform_updated__.bind(this);
         this.__on_player_hit_mob__ = this.__on_player_hit_mob__.bind(this);
         this.__on_inventory_change__ = this.__on_inventory_change__.bind(this);
         this.__on_player_loot_mob__ = this.__on_player_loot_mob__.bind(this);
@@ -88,7 +95,7 @@ class Player {
     }
 
     __hook__() {
-        this._socket.on(NETMSG_PLAYER_DATA, this.__on_player_updated__);
+        this._socket.on(NETMSG_PLAYER_TRANSFORM_CHANGE, this.__on_transform_updated__);
         this._socket.on(NETMSG_HIT_MOB, this.__on_player_hit_mob__)
         this._socket.on(NETMSG_INVENTORY_CHANGED, this.__on_inventory_change__);
         this._socket.on(NETMSG_ADD_INVENTORY, this.__add_inventory__);
@@ -106,10 +113,10 @@ class Player {
     }
 
     __detect_stationary__() {
-        this._posChange = new Vector3(this._data.player.pos).distanceTo(new Vector3(this._lastFramePos));
-        this._rotChange = new Vector3(this._data.player.rot).distanceTo(new Vector3(this._lastFrameRot));
-        this._lastFramePos = this._data.player.pos;
-        this._lastFrameRot = this._data.player.rot;
+        this._posChange = new Vector3(this._data.transform.pos).distanceTo(new Vector3(this._lastFramePos));
+        this._rotChange = new Vector3(this._data.transform.rot).distanceTo(new Vector3(this._lastFrameRot));
+        this._lastFramePos = this._data.transform.pos;
+        this._lastFrameRot = this._data.transform.rot;
         if (this._posChange == 0 && this._rotChange == 0) {
             this._stationaryTimer += this._game.deltaTime;
         } else {
@@ -118,7 +125,7 @@ class Player {
     }
 
     /*
-     * This functions returns a mapped list of entities closest to the player.
+     * This functions returns a mapped list of entities closest to the player
      * The returned array is used to determine which entities need to be notified about this player's state.
      * See the update function above.
      */
@@ -129,15 +136,15 @@ class Player {
         });
 
         // update the state
-        const _playerPos = new Vector3(this._data.player.pos);
+        const _playerPos = new Vector3(this._data.transform.pos);
         _output = filter(_objects, function(_o) {
             // do not send player data back to himself
-            if (_o.data.id == this._data.player.id) {
-                //console.log(this._data.player.id)
+            if (_o.data.id == this._data.id) {
+                //console.log(this._data.id)
                 return false;
             }
 
-            const _pos = new Vector3(_o.data.pos);
+            const _pos = new Vector3(_o.data.transform.pos);
 
             // compare the distance of the player to the object
             if (_playerPos.distanceTo(_pos) <= _range) {
@@ -200,7 +207,7 @@ class Player {
         API.addInventoryItem({
             id: this._data.account.id,
             apiKey: this._data.account.apiKey,
-            playerID: this._data.player.id,
+            playerID: this._data.id,
             itemID: _data.id,
             lvl: _data.level
         }, _success => {
@@ -215,10 +222,10 @@ class Player {
             auth: {
                 id: this._data.account.id,
                 apiKey: this._data.account.apiKey,
-                playerID: this._data.player.id
+                playerID: this._data.id
             },
             elementKey: {
-                playerID: this._data.player.id,
+                playerID: this._data.id,
                 itemID: _data.itemID,
                 loc: _data.loc
             }
@@ -237,13 +244,13 @@ class Player {
         const _res = await API.equip({
             id: this._data.account.id,
             apiKey: this._data.account.apiKey,
-            playerID: this._data.player.id,
+            playerID: this._data.id,
             itemID: _data.itemID,
             inventoryLoc: _data.inventoryLoc
         });
 
         switch (_res.data.statusCode) {
-            case 200: this.__send_message_to_nearby_players__(NETMSG_PLAYER_EQUIP_SUCCESS, {playerName:this._data.player.name, playerID:this._data.player.id,itemID:_data.itemID, inventoryLoc: _data.inventoryLoc}); break; // success
+            case 200: this.__send_message_to_nearby_players__(NETMSG_PLAYER_EQUIP_SUCCESS, {playerName:this._data.name, playerID:this._data.id,itemID:_data.itemID, inventoryLoc: _data.inventoryLoc}); break; // success
             case 1401: this._socket.emit(NETMSG_PLAYER_EQUIP_FAILURE, {message:`You cannot equip an item you do not own.`}); break; // Item does not exist in the player's inventory
             case 1402: this._socket.emit(NETMSG_PLAYER_EQUIP_FAILURE, {message:`You cannot equip this item.`}); break; // Item is not equippable
             case 1403: this._socket.emit(NETMSG_PLAYER_EQUIP_FAILURE, {message:`Your current equipment prevents you from using this item.`}); break; // Equipment slot is occupied
@@ -255,14 +262,14 @@ class Player {
         const _res = await API.unequip({
             id: this._data.account.id,
             apiKey: this._data.account.apiKey,
-            playerID: this._data.player.id,
+            playerID: this._data.id,
             itemID: _data.itemID
         });
 
         switch (_res.statusCode) {
             case 200: 
                 const _msg = JSON.parse(_res.data.message);
-                this.__send_message_to_nearby_players__(NETMSG_PLAYER_UNEQUIP_SUCCESS, {playerName:this._data.player.name, playerID:this._data.player.id,itemID:_data.itemID, inventorySlot: _msg.id}); 
+                this.__send_message_to_nearby_players__(NETMSG_PLAYER_UNEQUIP_SUCCESS, {playerName:this._data.name, playerID:this._data.id,itemID:_data.itemID, inventorySlot: _msg.id}); 
                 break; // success
             case 1401: this._socket.emit(NETMSG_PLAYER_UNEQUIP_FAILURE, {message:`You cannot unequip an item that is not equipped.`}); break; // Item does not exist in the player's equipment
             case 1402: this._socket.emit(NETMSG_PLAYER_UNEQUIP_FAILURE, {message:`You can not unequip this item.`}); break; // Item is not equippable
@@ -274,7 +281,7 @@ class Player {
         const _shopId = _data.id;
         const _shop = this._game.getShopTerminal(_shopId);
         // compare distances
-        const _dist = new Vector3(_shop.pos).distanceTo(new Vector3(this._data.player.pos));
+        const _dist = new Vector3(_shop.pos).distanceTo(new Vector3(this._data.transform.pos));
         if (_dist > 3) {
             this._socket.emit(NETMSG_CHAT, {message:'<color=#fff>You are out of range.</color>'});
         } else {
@@ -287,9 +294,9 @@ class Player {
         console.log(`trading ${JSON.stringify(_data)}`);
         
         const _netTransfer = accumulate(_data.sell, 'price') - accumulate(_data.buy, 'price');
-        console.log(`Player has ${this._data.player.tix} TIX, and the net transfer of this trade is ${_netTransfer} TIX.`);
+        console.log(`Player has ${this._data.tix} TIX, and the net transfer of this trade is ${_netTransfer} TIX.`);
 
-        if (this._data.player.tix + _netTransfer < 0) {
+        if (this._data.tix + _netTransfer < 0) {
             this._socket.emit(NETMSG_CHAT, {message:'<color=#fff>You do not have enough TIX.</color>'});
         }
         
@@ -303,19 +310,19 @@ class Player {
             this.__remove_inventory__({itemID: _data.sell[i].itemID, loc: _data.sell[i].inventoryLoc});
         }
 
-        this._data.player.tix -= _netTransfer;
+        this._data.tix -= _netTransfer;
         // update player 
 
-        this._socket.emit(NETMSG_TRADE_SHOP_SUCCESS, {message:JSON.stringify({tix:this._data.player.tix,transactionId:_data.transactionId})});
+        this._socket.emit(NETMSG_TRADE_SHOP_SUCCESS, {message:JSON.stringify({tix:this._data.tix,transactionId:_data.transactionId})});
     }
 
-    __on_player_updated__(_player) {
-        this._data.player = _player;
-            this._game.updatePlayer(this);
+    __on_transform_updated__(_transform) {
+        this._data.transform = _transform;
+        this._game.updatePlayer(this);
     }
 
     __on_player_hit_mob__(_mobHitInfo) {
-        _mobHitInfo.playerName = this._data.player.name;
+        _mobHitInfo.playerName = this._data.name;
         this._game.onPlayerHitMob(this, _mobHitInfo);
         this._socket.emit(NETMSG_PLAYER_HIT_MOB_CONFIRMATION, {
             message: JSON.stringify(_mobHitInfo)
@@ -327,7 +334,7 @@ class Player {
         API.updateInventoryItemSlot({
             id: this._data.account.id,
             apiKey: this._data.account.apiKey,
-            playerID: this._data.player.id,
+            playerID: this._data.id,
             slotLoc: _inventory.slotLoc,
             slotID: _inventory.slotID
         });
@@ -347,12 +354,12 @@ class Player {
         API.addInventoryItem({
             id: this._data.account.id,
             apiKey: this._data.account.apiKey,
-            playerID: this._data.player.id,
+            playerID: this._data.id,
             itemID: _lootInfo.itemID,
             lvl: _loot.def.level
         }, _success => {
             const _mobLootData = {
-                playerID: this._data.player.id,
+                playerID: this._data.id,
                 mobID: _lootInfo.mobID,
                 itemID: _loot.def.id
             };
@@ -365,7 +372,7 @@ class Player {
     }
 
     __send_message_to_nearby_players__(_evt, _msg, _includeThisPlayer) {
-        const _nearbyPlayers = this._game.scanNearbyPlayerSockets(this._data.player.pos, 50);
+        const _nearbyPlayers = this._game.scanNearbyPlayerSockets(this._data.transform.pos, 50);
         for (var i in _nearbyPlayers) {
             const _socket = _nearbyPlayers[i];
             _socket.emit(_evt, {
@@ -379,14 +386,14 @@ class Player {
         }
     }
     
-    get data() { return this._data.player; }
+    get data() { return this._data; }
+    get transform() { return this._data.transform; }
     get sessionId() { return this._data.sessionId; }
     get socket() { return this._socket; }
     get nearbyMobs() { return this._nearbyMobs; }
     get nearbyPlayers() { return this._nearbyPlayers; }
     get isStationary() { return this._stationaryTimer > 2; }
     get dead() { return this._dead; }
-    set data(_val) { this._data.player = _val; }
 }
 
 module.exports = Player;

@@ -91,7 +91,7 @@ class Game
      */
     scanNearbyPlayers(_pos, _radius) {
         return filter(this.__obj_data_map__(this._players), _player => {
-            const _dist = new Vector3(_pos).distanceTo(new Vector3(_player.pos));
+            const _dist = new Vector3(_pos).distanceTo(new Vector3(_player.transform.pos));
             return _dist < _radius;
         });
     }
@@ -108,7 +108,7 @@ class Game
      */
     scanNearbyPlayerSockets(_pos, _radius) {
         const _nearbyPlayers = filter(this._players, _player => {
-            const _dist = new Vector3(_pos).distanceTo(new Vector3(_player.data.pos));
+            const _dist = new Vector3(_pos).distanceTo(new Vector3(_player.transform.pos));
             return _dist < _radius;
         });
         return map(_nearbyPlayers, _player => {
@@ -150,7 +150,7 @@ class Game
             const _player = this._instance.players[i];
             
             const _instance = {
-                players: this.__obj_data_map__(_player.nearbyPlayers),
+                players: map(_player.nearbyPlayers, _p => {return _p.transform}),
                 mobs: this.__obj_data_map__(_player.nearbyMobs)
             };
 
@@ -230,8 +230,8 @@ class Game
                 // update database with last saved position
                 API.savePlayerSessionPos({
                     ID: _player.sessionId,
-                    posX: _player.data.pos.x, posY: _player.data.pos.y, posZ: _player.data.pos.z,
-                    rotX: _player.data.rot.x, rotY: _player.data.rot.y, rotZ: _player.data.rot.z});
+                    posX: _player.transform.pos.x, posY: _player.transform.pos.y, posZ: _player.transform.pos.z,
+                    rotX: _player.transform.rot.x, rotY: _player.transform.rot.y, rotZ: _player.transform.rot.z});
 
                 // remove player from array
                 this._players = filter(this._players, _player => {return _player.data.name !== _thisPlayer.data.name});

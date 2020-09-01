@@ -29,8 +29,10 @@ const a0zix = function(_level, _pos, _rot) {
         respawnTime: 120, // in seconds
         xpReward: 25*_level,
         xpRewardVariance: 10*_level,
-        pos: new Vector3(_pos).obj,
-        rot: new Vector3(_rot).obj,
+        transform: {
+            pos: new Vector3(_pos).obj,
+            rot: new Vector3(_rot).obj
+        },
         inCombat: false,
         healDelta: 50,
         runSpeed: 3,
@@ -66,8 +68,10 @@ const toxicA0zix = function(_level, _pos, _rot) {
         respawnTime: 120, // in seconds
         xpReward: 50*_level,
         xpRewardVariance: 10*_level,
-        pos: new Vector3(_pos).obj,
-        rot: new Vector3(_rot).obj,
+        transform: {
+            pos: new Vector3(_pos).obj,
+            rot: new Vector3(_rot).obj
+        },
         inCombat: false,
         healDelta: 50,
         runSpeed: 5,
@@ -103,8 +107,10 @@ const enragedA0Zix = function(_level, _pos, _rot) {
         respawnTime: 240, // in seconds
         xpReward: 150*_level,
         xpRewardVariance: 10*_level,
-        pos: new Vector3(_pos).obj,
-        rot: new Vector3(_rot).obj,
+        transform: {
+            pos: new Vector3(_pos).obj,
+            rot: new Vector3(_rot).obj
+        },
         inCombat: false,
         healDelta: 50,
         runSpeed: 5,
@@ -140,8 +146,10 @@ const droid = function(_level, _pos, _rot) {
         respawnTime: 120, // in seconds
         xpReward: 50*_level,
         xpRewardVariance: 10*_level,
-        pos: new Vector3(_pos).obj,
-        rot: new Vector3(_rot).obj,
+        transform: {
+            pos: new Vector3(_pos).obj,
+            rot: new Vector3(_rot).obj
+        },
         inCombat: false,
         healDelta: 50,
         runSpeed: 2,
@@ -177,8 +185,10 @@ const enragedDroid = function(_level, _pos, _rot) {
         respawnTime: 120, // in seconds
         xpReward: 75*_level,
         xpRewardVariance: 10*_level,
-        pos: new Vector3(_pos).obj,
-        rot: new Vector3(_rot).obj,
+        transform: {
+            pos: new Vector3(_pos).obj,
+            rot: new Vector3(_rot).obj
+        },
         inCombat: false,
         healDelta: 50,
         runSpeed: 5,
