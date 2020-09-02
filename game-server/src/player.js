@@ -38,6 +38,8 @@ const NETMSG_INTERACT_SHOP = 'NETMSG_INTERACT_SHOP';
 const NETMSG_INTERACT_SHOP_SUCCESS = 'NETMSG_INTERACT_SHOP_SUCCESS';
 const NETMSG_TRADE_SHOP = 'NETMSG_TRADE_SHOP';
 const NETMSG_TRADE_SHOP_SUCCESS = 'NETMSG_TRADE_SHOP_SUCCESS';
+const NETMSG_PLAYER_ANIM_FLOAT = 'NETMSG_PLAYER_ANIM_FLOAT';
+const NETMSG_PLAYER_ANIM_BOOL = 'NETMSG_PLAYER_ANIM_BOOL';
 
 class Player {
     
@@ -75,6 +77,8 @@ class Player {
         this.__on_interact_shop__ = this.__on_interact_shop__.bind(this);
         this.__on_trade_shop__ = this.__on_trade_shop__.bind(this);
         this.__add_inventory__ = this.__add_inventory__.bind(this);
+        this.__on_animation_float__ = this.__on_animation_float__.bind(this);
+        this.__on_animation_bool__ = this.__on_animation_bool__.bind(this);
         this.__hook__ = this.__hook__.bind(this);
 
         // player emit events
@@ -104,6 +108,8 @@ class Player {
         this._socket.on(NETMSG_PLAYER_UNEQUIP, this.__on_unequip__);
         this._socket.on(NETMSG_INTERACT_SHOP, this.__on_interact_shop__);
         this._socket.on(NETMSG_TRADE_SHOP, this.__on_trade_shop__);
+        this._socket.on(NETMSG_PLAYER_ANIM_FLOAT, this.__on_animation_float__);
+        this._socket.on(NETMSG_PLAYER_ANIM_BOOL, this.__on_animation_bool__);
     }
 
     update() {
@@ -319,6 +325,14 @@ class Player {
     __on_transform_updated__(_transform) {
         this._data.transform = _transform;
         this._game.updatePlayer(this);
+    }
+
+    __on_animation_float__(_data) {
+        this.__send_message_to_nearby_players__(NETMSG_ANIM_FLOAT, _data, false);
+    }
+
+    __on_animation_bool__(_data) {
+        this.__send_message_to_nearby_players__(NETMSG_ANIM_BOOL, _data, false);
     }
 
     __on_player_hit_mob__(_mobHitInfo) {
