@@ -45,6 +45,7 @@ class Game
         // updaters
         this.__update_mobs__ = this.__update_mobs__.bind(this);
         this.__update_players__ = this.__update_players__.bind(this);
+        this.__update_shops__ = this.__update_shops__.bind(this);
         this.__emit_tailored_instance__ = this.__emit_tailored_instance__.bind(this);
 
         this.__hook_server__();
@@ -60,6 +61,7 @@ class Game
         // update entities
         this.__update_players__();
         this.__update_mobs__();
+        this.__update_shops__();
 
         // emit tailored instance for each player
         this.__emit_tailored_instance__();
@@ -89,7 +91,7 @@ class Game
      */
     scanNearbyPlayers(_pos, _radius) {
         return filter(this.__obj_data_map__(this._players), _player => {
-            const _dist = new Vector3(_pos).distanceTo(new Vector3(_player.pos));
+            const _dist = new Vector3(_pos).distanceTo(new Vector3(_player.transform.pos));
             return _dist < _radius;
         });
     }
@@ -100,13 +102,19 @@ class Game
         });
     }
 
+    getPlayerRaw(_name) {
+        return find(this._players, _player => {
+            return _player.data.name == _name;
+        });
+    }
+
     /*
      * Mobs will constantly scan for nearby players
      * Also used to determine the range where players can see other players
      */
     scanNearbyPlayerSockets(_pos, _radius) {
         const _nearbyPlayers = filter(this._players, _player => {
-            const _dist = new Vector3(_pos).distanceTo(new Vector3(_player.data.pos));
+            const _dist = new Vector3(_pos).distanceTo(new Vector3(_player.transform.pos));
             return _dist < _radius;
         });
         return map(_nearbyPlayers, _player => {
@@ -131,6 +139,10 @@ class Game
         return find(this._mobs, _m => {return _m.data.id == _id;});
     }
 
+    getShopTerminal(_id) {
+        return find(this._scene.shops, _s => {return _s.id == _id;});
+    }
+
     /*
      * Emits a specific instance of nearby players and nearby mobs for each player..
      * ..based on distance
@@ -144,7 +156,7 @@ class Game
             const _player = this._instance.players[i];
             
             const _instance = {
-                players: this.__obj_data_map__(_player.nearbyPlayers),
+                players: map(_player.nearbyPlayers, _p => {return _p.transform}),
                 mobs: this.__obj_data_map__(_player.nearbyMobs)
             };
 
@@ -174,6 +186,12 @@ class Game
     __update_players__() {
         for (var i = 0; i < this._players.length; i++) {
             this._players[i].update();
+        }
+    }
+
+    __update_shops__() {
+        for (var i = 0; i < this._scene.shops.length; i++) {
+            this._scene.shops[i].update();
         }
     }
 
@@ -218,8 +236,8 @@ class Game
                 // update database with last saved position
                 API.savePlayerSessionPos({
                     ID: _player.sessionId,
-                    posX: _player.data.pos.x, posY: _player.data.pos.y, posZ: _player.data.pos.z,
-                    rotX: _player.data.rot.x, rotY: _player.data.rot.y, rotZ: _player.data.rot.z});
+                    posX: _player.transform.pos.x, posY: _player.transform.pos.y, posZ: _player.transform.pos.z,
+                    rotX: _player.transform.rot.x, rotY: _player.transform.rot.y, rotZ: _player.transform.rot.z});
 
                 // remove player from array
                 this._players = filter(this._players, _player => {return _player.data.name !== _thisPlayer.data.name});
@@ -239,6 +257,10 @@ class Game
 
     get scene() {
         return this._scene;
+    }
+
+    get shops() {
+        return this._scene.shops;
     }
 
     get mobs() {

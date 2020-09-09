@@ -6,7 +6,6 @@ const getPath = require('./pathfinder.js');
 
 const NETMSG_MOB_ATTACK_START = "MOB_ATTACK_START";
 const NETMSG_MOB_ATTACK = "MOB_ATTACK";
-const NETMSG_MOB_HIT_PLAYER = "MOB_HIT_PLAYER";
 const NETMSG_MOB_COMBAT_STATE_CHANGE = "MOB_COMBAT_STATE_CHANGE";
 const NETMSG_MOB_ATTACK_RANGE_CHANGE = "MOB_ATTACK_RANGE_STATE_CHANGE";
 const NETMSG_MOB_HEALTH_CHANGE = "MOB_HEALTH_CHANGE";
@@ -20,8 +19,8 @@ class Mob {
         // track initial data for respawn
         this._initialData = JSON.parse(JSON.stringify(this._data));
         this._targets = [];
-        this._defaultPos = new Vector3(this._data.pos);
-        this._defaultRot = new Vector3(this._data.rot);
+        this._defaultPos = new Vector3(this._data.transform.pos);
+        this._defaultRot = new Vector3(this._data.transform.rot);
         this._speedVariance = 2;
 
         this.__detect_stationary__ = this.__detect_stationary__.bind(this);
@@ -47,7 +46,7 @@ class Mob {
 
     update() {
         this.__detect_stationary__();
-        const _mobPos = new Vector3(this._data.pos);
+        const _mobPos = new Vector3(this._data.transform.pos);
         
         if (this._dead) {
             this.__handle_loot__();
@@ -66,10 +65,10 @@ class Mob {
     }
 
     __detect_stationary__() {
-        this._posChange = new Vector3(this._data.pos).distanceTo(new Vector3(this._lastFramePos));
-        this._rotChange = new Vector3(this._data.rot).distanceTo(new Vector3(this._lastFrameRot));
-        this._lastFramePos = this._data.pos;
-        this._lastFrameRot = this._data.rot;
+        this._posChange = new Vector3(this._data.transform.pos).distanceTo(new Vector3(this._lastFramePos));
+        this._rotChange = new Vector3(this._data.transform.rot).distanceTo(new Vector3(this._lastFrameRot));
+        this._lastFramePos = this._data.transform.pos;
+        this._lastFrameRot = this._data.transform.rot;
     }
 
     hit(_mobHitInfo) {
@@ -86,7 +85,7 @@ class Mob {
         this.__on_health_change__();
 
         if (!this._data.inCombat) {
-            const _targetPos = new Vector3(this._game.getPlayer(_mobHitInfo.playerName).pos);
+            const _targetPos = new Vector3(this._game.getPlayer(_mobHitInfo.playerName).transform.pos);
             //this._waypoints = getPath(this._game.scene.waypointGraph, _mobPos, _targetPos);
             //this._waypoint = this._waypoints[0];
             this._waypoint = _targetPos;
@@ -126,10 +125,10 @@ class Mob {
     }
 
     __choose_target__() {
-        const _mobPos = new Vector3(this._data.pos);
+        const _mobPos = new Vector3(this._data.transform.pos);
         
         // find nearby potential targets
-        this._targets = this._game.scanNearbyPlayers(this._data.pos, this._data.retreatRange);
+        this._targets = this._game.scanNearbyPlayers(this._data.transform.pos, this._data.retreatRange);
 
         // start with the closest target
         if (this._target == null) {
@@ -176,8 +175,8 @@ class Mob {
 
     __follow_target__() {
         if (!this._target) return;
-        const _mobPos = new Vector3(this._data.pos);
-        const _targetPos = new Vector3(this._target.pos);
+        const _mobPos = new Vector3(this._data.transform.pos);
+        const _targetPos = new Vector3(this._target.transform.pos);
         if (_mobPos.distanceTo(_targetPos) < 1) {
             return;
         }
@@ -191,13 +190,13 @@ class Mob {
             this.__lookAt_target__();
         }
 
-        this._data.pos = _mobPos.moveToward(this._waypoint, this._runSpeed * this._game.deltaTime).obj;
+        this._data.transform.pos = _mobPos.moveToward(this._waypoint, this._runSpeed * this._game.deltaTime).obj;
     }
 
     __lookAt_target__() {
-        const _mobPos = new Vector3(this._data.pos);
+        const _mobPos = new Vector3(this._data.transform.pos);
         const _dir = _mobPos.lookAt(this._waypoint);
-        this._data.rot.y = _dir.angleTo(Vec3Right);
+        this._data.transform.rot.y = _dir.angleTo(Vec3Right);
     }
 
     __attack_target__() {
@@ -233,8 +232,8 @@ class Mob {
             return false;
         }
         
-        const _mobPos = new Vector3(this._data.pos);
-        const _targetPos = new Vector3(this._target.pos);
+        const _mobPos = new Vector3(this._data.transform.pos);
+        const _targetPos = new Vector3(this._target.transform.pos);
         const _dist = _mobPos.distanceTo(_targetPos);
         if (_dist <= this._data.attackRange && !this._data.inAttackRange) {
             this._data.inAttackRange = true;
@@ -248,7 +247,7 @@ class Mob {
     }
 
     __retreat__() {
-        const _mobPos = new Vector3(this._data.pos);
+        const _mobPos = new Vector3(this._data.transform.pos);
         const _targetPos = this._defaultPos;
 
         // iterate over positions moving to each one in path
@@ -260,15 +259,15 @@ class Mob {
             this.__lookAt_target__();
         }
 
-        this._data.pos = _mobPos.moveToward(this._waypoint, this._runSpeed * this._game.deltaTime).obj;
+        this._data.transform.pos = _mobPos.moveToward(this._waypoint, this._runSpeed * this._game.deltaTime).obj;
     }
 
     __patrol__() {
-        this._targets = this._game.scanNearbyPlayers(this._data.pos, this._data.aggroRange);
-        const _mobPos = new Vector3(this._data.pos);
-        this._data.rot = this._defaultRot.obj;
+        this._targets = this._game.scanNearbyPlayers(this._data.transform.pos, this._data.aggroRange);
+        const _mobPos = new Vector3(this._data.transform.pos);
+        this._data.transform.rot = this._defaultRot.obj;
         if (this._targets.length > 0) {
-            const _targetPos = new Vector3(this._targets[0].pos);
+            const _targetPos = new Vector3(this._targets[0].transform.pos);
             //this._waypoints = getPath(this._game.scene.waypointGraph, _mobPos, _targetPos);
             //this._waypoint = this._waypoints[0];
             this._waypoint = _targetPos;
@@ -321,8 +320,8 @@ class Mob {
         this._aggroSwitchTimer = 0;
 
         // these values help us determine if the mob is stationary or not
-        this._lastFramePos = this._data.pos;
-        this._lastFrameRot = this._data.rot;
+        this._lastFramePos = this._data.transform.pos;
+        this._lastFrameRot = this._data.transform.rot;
         this._posChange = 0;
         this._rotChange = 0;
         this._dead = false;
@@ -342,21 +341,21 @@ class Mob {
     }
 
     __on_hit_player__(_player, _dmg) {
-        _player.health -= _dmg;
-        if (_player.health < 0) {
-            _player.health = 0;
+        // raw player gets the entire player object, not just its data fields
+        var _rawPlayer = this._game.getPlayerRaw(_player.name);
+        if (!_rawPlayer) {
+            console.log(`Could not find raw player ${_player.name}`);
+            return;
         }
 
-        this.__send_message_to_nearby_players__(NETMSG_MOB_HIT_PLAYER, {
+        _rawPlayer.takeHit({
             mobId: this._data.id,
             mobName: this._data.name,
-            playerName: _player.name,
-            dmg: _dmg,
-            health: _player.health
+            playerName: _rawPlayer.data.name,
+            dmg: _dmg
         });
 
-        if (_player.health == 0) {
-            // notify nearby players..
+        if (_rawPlayer.data.health.health == 0) {
             //this._waypoints = getPath(this._game.scene.waypointGraph, _mobPos, this._defaultPos);
             //this._waypoint = this._waypoints[0];
             this._waypoint = this._defaultPos;
@@ -434,7 +433,7 @@ class Mob {
     }
 
     __send_message_to_nearby_players__(_evt, _msg) {
-        const _nearbySockets = this._game.scanNearbyPlayerSockets(this._data.pos, 50);
+        const _nearbySockets = this._game.scanNearbyPlayerSockets(this._data.transform.pos, 50);
         for (var i in _nearbySockets) {
             const _socket = _nearbySockets[i];
             _socket.emit(_evt, {
@@ -452,8 +451,10 @@ class Mob {
             health: this._data.health,
             maxEnergy: this._data.maxEnergy,
             energy: this._data.energy,
-            pos: LowPrecisionSimpleVector3(this._data.pos),
-            rot: LowPrecisionSimpleVector3(this._data.rot),
+            transform: {
+                pos: LowPrecisionSimpleVector3(this._data.transform.pos),
+                rot: LowPrecisionSimpleVector3(this._data.transform.rot)
+            },
             inCombat: this._data.inCombat,
             inAttackRange: this._data.inAttackRange,
             dead: this._dead,
@@ -464,8 +465,10 @@ class Mob {
     get data() {
         return {
             id: this._data.id,
-            pos: LowPrecisionSimpleVector3(this._data.pos),
-            rot: LowPrecisionSimpleVector3(this._data.rot),
+            transform: {
+                pos: LowPrecisionSimpleVector3(this._data.transform.pos),
+                rot: LowPrecisionSimpleVector3(this._data.transform.rot)
+            }
         }
     }
 
