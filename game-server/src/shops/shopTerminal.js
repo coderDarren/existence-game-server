@@ -42,7 +42,7 @@ class ShopTerminal {
         for (var i in this._items) {
             // 5 of each item, random qls
             for (var x = 0; x <= 4; x++) {
-                let _item = JSON.parse(JSON.stringify(this._items[i]));\
+                let _item = JSON.parse(JSON.stringify(this._items[i]));
 
                 _item.def.level = this._lvlRange.min + Math.floor(Math.random()*(this._lvlRange.max - this._lvlRange.min)+1);
                 this.__calculate_item_stats__(_item.def.requirements, _item.def.level);
