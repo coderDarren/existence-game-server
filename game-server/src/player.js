@@ -5,11 +5,7 @@ const {filter} = require('lodash');
 const {accumulate} = require('./util/func.js');
 
 const NETMSG_CHAT = "CHAT";
-const NETMSG_PLAYER_DATA = "PLAYER";
 const NETMSG_PLAYER_TRANSFORM_CHANGE = "PLAYER_TRANSFORM_CHANGE";
-const NETMSG_PLAYER_ATTACK_START = "PLAYER_ATTACK_START";
-const NETMSG_PLAYER_ATTACK_STOP = "PLAYER_ATTACK_STOP";
-const NETMSG_PLAYER_USE_SPECIAL = "PLAYER_USE_SPECIAL";
 const NETMSG_PLAYER_HEALTH_CHANGE = "PLAYER_HEALTH_CHANGE";
 const NETMSG_PLAYER_LVL_CHANGE = "PLAYER_LVL_CHANGE";
 const NETMSG_HIT_MOB = "HIT_MOB";
@@ -25,6 +21,7 @@ const NETMSG_PLAYER_SPAWN = "PLAYER_SPAWN";
 const NETMSG_PLAYER_EXIT = "PLAYER_EXIT";
 const NETMSG_PLAYER_HIT_MOB_CONFIRMATION = "PLAYER_HIT_MOB_CONFIRMATION";
 const NETMSG_PLAYER_LOOT_MOB = "PLAYER_LOOT_MOB";
+const NETMSG_MOB_HIT_PLAYER = "MOB_HIT_PLAYER";
 const NETMSG_MOB_LOOTED = "MOB_LOOTED";
 const NETMSG_MOB_LOOT_LOCKED = "PLAYER_MOB_LOOT_LOCKED";
 const NETMSG_PLAYER_LOCK_LOOT = "PLAYER_LOCK_LOOT";
@@ -58,8 +55,6 @@ class Player {
         this._nearbyPlayersState = {};
         this._dead = false;
 
-        console.log(_data);
-
         // these values help us determine if the player is stationary or not
         this._lastFramePos = this._data.transform.pos;
         this._lastFrameRot = this._data.transform.rot;
@@ -69,6 +64,7 @@ class Player {
 
         // incoming events from player
         this.__on_transform_updated__ = this.__on_transform_updated__.bind(this);
+        this.__on_health_change__ = this.__on_health_change__.bind(this);
         this.__on_player_hit_mob__ = this.__on_player_hit_mob__.bind(this);
         this.__on_inventory_change__ = this.__on_inventory_change__.bind(this);
         this.__on_player_loot_mob__ = this.__on_player_loot_mob__.bind(this);
@@ -110,12 +106,33 @@ class Player {
         this._socket.on(NETMSG_TRADE_SHOP, this.__on_trade_shop__);
         this._socket.on(NETMSG_PLAYER_ANIM_FLOAT, this.__on_animation_float__);
         this._socket.on(NETMSG_PLAYER_ANIM_BOOL, this.__on_animation_bool__);
+        this._socket.on(NETMSG_PLAYER_HEALTH_CHANGE, this.__on_health_change__);
     }
 
     update() {
         this.__detect_stationary__();
         this._nearbyMobs = this.__handle_nearby_objects__(this._nearbyMobs, this._nearbyMobsState, this._game.mobs, 'id', 50, this.__on_mob_spawn__, this.__on_mob_exit__);
         this._nearbyPlayers = this.__handle_nearby_objects__(this._nearbyPlayers, this._nearbyPlayersState, this._game.players, 'name', 50, this.__on_player_spawn__, this.__on_player_exit__);
+    }
+
+    /*
+     * Called by mob when player gets hit
+     */
+    takeHit(_hitInfo) {
+        this._data.health.health -= _hitInfo.dmg;
+        if (this._data.health.health < 0) {
+            this._data.health.health = 0;
+        }
+
+        _hitInfo.health = this._data.health.health;
+
+        this._socket.emit(NETMSG_MOB_HIT_PLAYER, {message:JSON.stringify(_hitInfo)});
+        
+        this.__send_message_to_nearby_players__(NETMSG_PLAYER_HEALTH_CHANGE, {
+            id: this._data.name,
+            health: this._data.health.health,
+            maxHealth: this._data.health.maxHealth
+        });
     }
 
     __detect_stationary__() {
@@ -151,10 +168,10 @@ class Player {
             }
 
             const _pos = new Vector3(_o.data.transform.pos);
-
+            
             // compare the distance of the player to the object
             if (_playerPos.distanceTo(_pos) <= _range) {
-
+                
                 // if within range, check to see if this object has been spawned yet
                 //console.log(_o.data[id])
                 if (_state[_o.data[`${id}`]] == undefined) { // object has not been spawned
@@ -328,11 +345,13 @@ class Player {
     }
 
     __on_animation_float__(_data) {
-        this.__send_message_to_nearby_players__(NETMSG_ANIM_FLOAT, _data, false);
+        this._data.anim[_data.anim] = _data;
+        this.__send_message_to_nearby_players__(NETMSG_PLAYER_ANIM_FLOAT, _data, false);
     }
 
     __on_animation_bool__(_data) {
-        this.__send_message_to_nearby_players__(NETMSG_ANIM_BOOL, _data, false);
+        this._data.anim[_data.anim] = _data;
+        this.__send_message_to_nearby_players__(NETMSG_PLAYER_ANIM_BOOL, _data, false);
     }
 
     __on_player_hit_mob__(_mobHitInfo) {
@@ -341,6 +360,12 @@ class Player {
         this._socket.emit(NETMSG_PLAYER_HIT_MOB_CONFIRMATION, {
             message: JSON.stringify(_mobHitInfo)
         });
+    }
+
+    __on_health_change__(_health) {
+        _health.id = this._data.name;
+        this._data.health = _health;
+        this.__send_message_to_nearby_players__(NETMSG_PLAYER_HEALTH_CHANGE, _health)
     }
 
     __on_inventory_change__(_inventory) {

@@ -6,7 +6,6 @@ const getPath = require('./pathfinder.js');
 
 const NETMSG_MOB_ATTACK_START = "MOB_ATTACK_START";
 const NETMSG_MOB_ATTACK = "MOB_ATTACK";
-const NETMSG_MOB_HIT_PLAYER = "MOB_HIT_PLAYER";
 const NETMSG_MOB_COMBAT_STATE_CHANGE = "MOB_COMBAT_STATE_CHANGE";
 const NETMSG_MOB_ATTACK_RANGE_CHANGE = "MOB_ATTACK_RANGE_STATE_CHANGE";
 const NETMSG_MOB_HEALTH_CHANGE = "MOB_HEALTH_CHANGE";
@@ -86,7 +85,7 @@ class Mob {
         this.__on_health_change__();
 
         if (!this._data.inCombat) {
-            const _targetPos = new Vector3(this._game.getPlayer(_mobHitInfo.playerName).pos);
+            const _targetPos = new Vector3(this._game.getPlayer(_mobHitInfo.playerName).transform.pos);
             //this._waypoints = getPath(this._game.scene.waypointGraph, _mobPos, _targetPos);
             //this._waypoint = this._waypoints[0];
             this._waypoint = _targetPos;
@@ -177,7 +176,7 @@ class Mob {
     __follow_target__() {
         if (!this._target) return;
         const _mobPos = new Vector3(this._data.transform.pos);
-        const _targetPos = new Vector3(this._target.pos);
+        const _targetPos = new Vector3(this._target.transform.pos);
         if (_mobPos.distanceTo(_targetPos) < 1) {
             return;
         }
@@ -234,7 +233,7 @@ class Mob {
         }
         
         const _mobPos = new Vector3(this._data.transform.pos);
-        const _targetPos = new Vector3(this._target.pos);
+        const _targetPos = new Vector3(this._target.transform.pos);
         const _dist = _mobPos.distanceTo(_targetPos);
         if (_dist <= this._data.attackRange && !this._data.inAttackRange) {
             this._data.inAttackRange = true;
@@ -268,7 +267,7 @@ class Mob {
         const _mobPos = new Vector3(this._data.transform.pos);
         this._data.transform.rot = this._defaultRot.obj;
         if (this._targets.length > 0) {
-            const _targetPos = new Vector3(this._targets[0].pos);
+            const _targetPos = new Vector3(this._targets[0].transform.pos);
             //this._waypoints = getPath(this._game.scene.waypointGraph, _mobPos, _targetPos);
             //this._waypoint = this._waypoints[0];
             this._waypoint = _targetPos;
@@ -342,21 +341,21 @@ class Mob {
     }
 
     __on_hit_player__(_player, _dmg) {
-        _player.health -= _dmg;
-        if (_player.health < 0) {
-            _player.health = 0;
+        // raw player gets the entire player object, not just its data fields
+        var _rawPlayer = this._game.getPlayerRaw(_player.name);
+        if (!_rawPlayer) {
+            console.log(`Could not find raw player ${_player.name}`);
+            return;
         }
 
-        this.__send_message_to_nearby_players__(NETMSG_MOB_HIT_PLAYER, {
+        _rawPlayer.takeHit({
             mobId: this._data.id,
             mobName: this._data.name,
-            playerName: _player.name,
-            dmg: _dmg,
-            health: _player.health
+            playerName: _rawPlayer.data.name,
+            dmg: _dmg
         });
 
-        if (_player.health == 0) {
-            // notify nearby players..
+        if (_rawPlayer.data.health.health == 0) {
             //this._waypoints = getPath(this._game.scene.waypointGraph, _mobPos, this._defaultPos);
             //this._waypoint = this._waypoints[0];
             this._waypoint = this._defaultPos;
@@ -452,8 +451,10 @@ class Mob {
             health: this._data.health,
             maxEnergy: this._data.maxEnergy,
             energy: this._data.energy,
-            pos: LowPrecisionSimpleVector3(this._data.transform.pos),
-            rot: LowPrecisionSimpleVector3(this._data.transform.rot),
+            transform: {
+                pos: LowPrecisionSimpleVector3(this._data.transform.pos),
+                rot: LowPrecisionSimpleVector3(this._data.transform.rot)
+            },
             inCombat: this._data.inCombat,
             inAttackRange: this._data.inAttackRange,
             dead: this._dead,

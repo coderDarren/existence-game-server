@@ -102,6 +102,12 @@ class Game
         });
     }
 
+    getPlayerRaw(_name) {
+        return find(this._players, _player => {
+            return _player.data.name == _name;
+        });
+    }
+
     /*
      * Mobs will constantly scan for nearby players
      * Also used to determine the range where players can see other players
