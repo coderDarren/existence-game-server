@@ -16,6 +16,7 @@ class ShopTerminal {
 
         this.__init__ = this.__init__.bind(this);
         this.__populate__ = this.__populate__.bind(this);
+        this.__calculate_item_stats__ = this.__calculate_item_stats__.bind(this);
         this.__init__();
     }
 
@@ -39,13 +40,22 @@ class ShopTerminal {
     __populate__() {
         this._population = [];
         for (var i in this._items) {
-            const _item = JSON.parse(JSON.stringify(this._items[i]));
             // 5 of each item, random qls
             for (var x = 0; x <= 4; x++) {
+                let _item = JSON.parse(JSON.stringify(this._items[i]));\
+
                 _item.def.level = this._lvlRange.min + Math.floor(Math.random()*(this._lvlRange.max - this._lvlRange.min)+1);
+                this.__calculate_item_stats__(_item.def.requirements, _item.def.level);
+                this.__calculate_item_stats__(_item.def.effects, _item.def.level);
                 this._population.push(JSON.stringify(_item));
             }
         }
+    }
+
+    __calculate_item_stats__(_stat, _lvl) {
+        Object.keys(_stat).forEach(_val => {
+            _stat[_val] *= _lvl;
+        });
     }
 
     get population() {
