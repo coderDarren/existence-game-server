@@ -47,6 +47,13 @@ class ShopTerminal {
                 _item.def.level = this._lvlRange.min + Math.floor(Math.random()*(this._lvlRange.max - this._lvlRange.min)+1);
                 this.__calculate_item_stats__(_item.def.requirements, _item.def.level);
                 this.__calculate_item_stats__(_item.def.effects, _item.def.level);
+                if (_item.damageMin) {
+                    _item.damageMin *= _item.def.level;
+                }
+                if (_item.damageMax) {
+                    _item.damageMax *= _item.def.level;
+                    _item.def.description = `Damage: ${_item.damageMin} - ${_item.damageMax}`;
+                }
                 this._population.push(JSON.stringify(_item));
             }
         }
