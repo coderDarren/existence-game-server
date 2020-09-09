@@ -82,6 +82,7 @@ class Mob {
             this._data.health = 0;
             this.__kill__();
         }
+        
         this.__on_health_change__();
 
         if (!this._data.inCombat) {
@@ -133,6 +134,9 @@ class Mob {
         // start with the closest target
         if (this._target == null) {
             this._target = this._targets[0];
+            if (this._target == null) {
+                return;
+            }
             this.__on_attack_start__(this._target.name);
             return;
         }
@@ -280,11 +284,11 @@ class Mob {
     }
 
     __heal_over_time__() {
-        this._data.health += this._data.healDelta;
         if (this._data.health > this._data.maxHealth) {
             this._data.health = this._data.maxHealth;
             this.__on_health_change__();
-        } else {
+        } else if (this._data.health < this._data.maxHealth) {
+            this._data.health += this._data.healDelta;
             this.__on_health_change__();
         }
     }
@@ -381,6 +385,7 @@ class Mob {
     }
 
     __on_health_change__() {
+        
         this.__send_message_to_nearby_players__(NETMSG_MOB_HEALTH_CHANGE, {
             id: this._data.id,
             health: this._data.health
