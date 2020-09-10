@@ -54,6 +54,7 @@ class ShopTerminal {
                     _item.damageMax *= _item.def.level;
                     _item.def.description = `Damage: ${_item.damageMin} - ${_item.damageMax}`;
                 }
+                _item.def.price = 100;
                 this._population.push(JSON.stringify(_item));
             }
         }
