@@ -88,8 +88,9 @@ class Player {
         this.__detect_stationary__ = this.__detect_stationary__.bind(this);
         this.__send_message_to_nearby_players__ = this.__send_message_to_nearby_players__.bind(this);
 
-        // other 
+        // player updates 
         this.__remove_inventory__ = this.__remove_inventory__.bind(this);
+        this.__update_player__ = this.__update_player__.bind(this);
 
         this.__hook__();
     }
@@ -300,6 +301,26 @@ class Player {
         }
     }
 
+    async __update_player__(_element, _strictKeys=null) {
+        const _res = await API.updatePlayer({
+            auth: {
+                id: this._data.account.id,
+                apiKey: this._data.account.apiKey,
+                playerID: this._data.id
+            },
+            elementKey: {
+                name: this._data.name
+            }, 
+            element: _element,
+            strictKeys: _strictKeys
+        });
+        if (_res.statusCode == 200) {
+            const _data = JSON.parse(_res.data.message);
+            return _data;
+        }
+        return null;
+    }
+
     __on_interact_shop__(_data) {
         const _shopId = _data.id;
         const _shop = this._game.getShopTerminal(_shopId);
@@ -313,7 +334,7 @@ class Player {
         }
     }
 
-    __on_trade_shop__(_data) {
+    async __on_trade_shop__(_data) {
         console.log(`trading ${JSON.stringify(_data)}`);
         
         const _netTransfer = accumulate(_data.sell, 'price') - accumulate(_data.buy, 'price');
@@ -321,6 +342,7 @@ class Player {
 
         if (this._data.tix + _netTransfer < 0) {
             this._socket.emit(NETMSG_CHAT, {message:'<color=#fff>You do not have enough TIX.</color>'});
+            return;
         }
         
         // add bought inventory
@@ -333,8 +355,10 @@ class Player {
             this.__remove_inventory__({itemID: _data.sell[i].itemID, loc: _data.sell[i].inventoryLoc});
         }
 
-        this._data.tix -= _netTransfer;
-        // update player 
+        const _tixUpdate = await this.__update_player__({tix: this._data.tix + _netTransfer}, 'tix');
+        if (_tixUpdate != null) {
+            this._data.tix = _tixUpdate.tix;
+        }
 
         this._socket.emit(NETMSG_TRADE_SHOP_SUCCESS, {message:JSON.stringify({tix:this._data.tix,transactionId:_data.transactionId})});
     }

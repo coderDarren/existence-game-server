@@ -57,6 +57,17 @@ class API {
         const _res = await this._rest.postData(`${this._apiUrl}modifyElement`, _params);
         return _res;
     }
+
+    async updatePlayer(_data) {
+        const _params = {
+            ..._data.auth,
+            table: 'players',
+            method: 'u',
+            ..._data
+        }
+        const _res = await this._rest.postData(`${this._apiUrl}modifyElement`, _params);
+        return _res;
+    }
 }
 
 module.exports = new API();

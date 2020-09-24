@@ -112,7 +112,8 @@ module.exports = (_game) => {
         [
             new ShopTerminal(_game, {id:0,pos:{x:741.01,y:48.73,z:-368.20},refreshRate:3600,shopType:ItemType.WEAPON,lvlRange:{min:1,max:20}}),
             new ShopTerminal(_game, {id:1,pos:{x:745.32,y:48.73,z:-368.20},refreshRate:3600,shopType:ItemType.ARMOR,lvlRange:{min:1,max:20}}),
-            new ShopTerminal(_game, {id:2,pos:{x:729.398,y:52.15,z:-380.3},refreshRate:3600,shopType:ItemType.WEAPON,lvlRange:{min:1,max:10}})
+            new ShopTerminal(_game, {id:2,pos:{x:729.398,y:52.15,z:-380.3},refreshRate:3600,shopType:ItemType.WEAPON,lvlRange:{min:1,max:10}}),
+            new ShopTerminal(_game, {id:3,pos:{x:727.8,y:52.15,z:-380.3},refreshRate:3600,shopType:ItemType.ARMOR,lvlRange:{min:1,max:10}})
         ]
     );
 };
