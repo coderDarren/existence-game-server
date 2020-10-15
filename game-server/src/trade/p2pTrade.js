@@ -31,10 +31,12 @@ class P2PTradeSocket {
     }
 
     addItem(_i) {
+        this._player.rmInventory(_i);
         this._items.push(_i);
     }
 
     rmItem(_i) {
+        this._player.addInventory(_i);
         this._items = filter(this._items, _item => {
             return _item.def.id != _i.def.id && _item.def.slotLoc != _i.def.slotLoc
         });
@@ -45,6 +47,13 @@ class P2PTradeSocket {
     get data() { return this._player.data; }
     get player() { return this._player; }
     get items() { return this._items; }
+    get itemsJson() {
+        var _ret = [];
+        for (var i in this._items) {
+            _ret.push(JSON.stringify(this._items[i]));
+        }
+        return _ret;
+    }
 }
 
 /*
@@ -83,6 +92,8 @@ class P2PTrade {
      * Create hooks for player '_p' trading with the other player '_o'
      */
     __hook__(_p, _o) {
+        console.log(`Hooking ${_p.data.name} to trade events with ${_o.data.name}`);
+
         // Request replies
         _p.socket.on(NETMSG_START_P2P_TRADE, _data => {this.__on_trade_start__(_p, _o, _data)});
         _p.socket.on(NETMSG_REJECT_P2P_TRADE, _data => {this.__on_trade_reject__(_p, _o, _data)});
@@ -97,54 +108,72 @@ class P2PTrade {
     }
     
     __on_trade_add_item__(_p, _o, _data) {
-        _p.addItem(_data.item);
-        _p.socket.emit(NETMSG_P2P_TRADE_ADD_ITEM, this.__netEvt__({player: _data.playerName, item: _data.item}));
-        _o.socket.emit(NETMSG_P2P_TRADE_ADD_ITEM, this.__netEvt__({player: _data.playerName, item: _data.item}));
+        console.log(`${_p.data.name} added trade item.`);
+        _p.addItem(JSON.parse(_data.itemJson));
+        _p.socket.emit(NETMSG_P2P_TRADE_ADD_ITEM, this.__netEvt__({playerName: _data.playerName, itemJson: _data.itemJson}));
+        _o.socket.emit(NETMSG_P2P_TRADE_ADD_ITEM, this.__netEvt__({playerName: _data.playerName, itemJson: _data.itemJson}));
     }
 
     __on_trade_rm_item__(_p, _o, _data) {
-        _p.rmItem(_data.item);
-        _p.socket.emit(NETMSG_P2P_TRADE_RM_ITEM, this.__netEvt__({player: _data.playerName, item: _data.item}));
-        _o.socket.emit(NETMSG_P2P_TRADE_RM_ITEM, this.__netEvt__({player: _data.playerName, item: _data.item}));
+        console.log(`${_p.data.name} removed trade item.`);
+        _p.rmItem(JSON.parse(_data.itemJson));
+        _p.socket.emit(NETMSG_P2P_TRADE_RM_ITEM, this.__netEvt__({playerName: _data.playerName, itemJson: _data.itemJson}));
+        _o.socket.emit(NETMSG_P2P_TRADE_RM_ITEM, this.__netEvt__({playerName: _data.playerName, itemJson: _data.itemJson}));
     }
 
     __on_trade_start__(_p, _o, _data) {
-        _p.socket.emit(NETMSG_START_P2P_TRADE, {player: _o.data.name});
-        _o.socket.emit(NETMSG_START_P2P_TRADE, {player: _p.data.name});
+        console.log(`${_p.data.name} started trade with ${_o.data.name}.`);
+        _p.socket.emit(NETMSG_START_P2P_TRADE, {message: _o.data.name});
+        _o.socket.emit(NETMSG_START_P2P_TRADE, {message: _p.data.name});
     }
 
     __on_trade_reject__(_p, _o, _data) {
+        console.log(`${_p.data.name} rejected trade request with ${_o.data.name}.`);
         _o.socket.emit(NETMSG_REJECT_P2P_TRADE, this.__netEvt__({}));
         this.__dispose__(_p);
         this.__dispose__(_o);
     }
 
     __on_trade_accept__(_p, _o, _data) {
-        // confirm results of trade
         _p.accept();
         const _allAccept = _p.state == P2PTradeState.ACCEPT && _o.state == P2PTradeState.ACCEPT;
-        _p.socket.emit(NETMSG_ACCEPT_P2P_TRADE, this.__netEvt__({accepted: _allAccept, items: _allAccept ? _o.items : []}));
-        _o.socket.emit(NETMSG_ACCEPT_P2P_TRADE, this.__netEvt__({accepted: _allAccept, items: _allAccept ? _p.items : []}));
+        console.log(`${_p.data.name} accepted the trade with ${_o.data.name}. All parties accept? ${_allAccept}`);
+        _p.socket.emit(NETMSG_ACCEPT_P2P_TRADE, this.__netEvt__({
+            accepted: _allAccept,
+            outgoingItems: _allAccept ? _p.itemsJson : "",
+            incomingItems: _allAccept ? _o.itemsJson : ""
+        }));
+        _o.socket.emit(NETMSG_ACCEPT_P2P_TRADE, this.__netEvt__({
+            accepted: _allAccept, 
+            outgoingItems: _allAccept ? _p.itemsJson : "",
+            incomingItems: _allAccept ? _o.itemsJson : ""
+        }));
     }
 
     __on_trade_decline__(_p, _o, _data) {
-        // decline results of trade
+        console.log(`${_p.data.name} cancels trade with ${_o.data.name}.`);
         _p.decline();
         _p.socket.emit(NETMSG_CANCEL_P2P_TRADE, this.__netEvt__({}));
         _o.socket.emit(NETMSG_CANCEL_P2P_TRADE, this.__netEvt__({}));
-        this.__dispose__(_p);
-        this.__dispose__(_o);
+        this.__dispose__();
     }
 
-    __dispose__(_p) {
-        _p.socket.removeListener(NETMSG_P2P_TRADE_ADD_ITEM, this.__on_trade_add_item__);
-        _p.socket.removeListener(NETMSG_P2P_TRADE_RM_ITEM, this.__on_trade_rm_item__);
-        _p.socket.removeListener(NETMSG_ACCEPT_P2P_TRADE, this.__on_trade_accept__);
-        _p.socket.removeListener(NETMSG_CANCEL_P2P_TRADE, this.__on_trade_decline__);
-        _o.socket.removeListener(NETMSG_P2P_TRADE_ADD_ITEM, this.__on_trade_add_item__);
-        _o.socket.removeListener(NETMSG_P2P_TRADE_RM_ITEM, this.__on_trade_rm_item__);
-        _o.socket.removeListener(NETMSG_ACCEPT_P2P_TRADE, this.__on_trade_accept__);
-        _o.socket.removeListener(NETMSG_CANCEL_P2P_TRADE, this.__on_trade_decline__);
+    __dispose__() {
+        console.log(`Disposing trade events`);
+
+        this._p1.socket.removeAllListeners(NETMSG_START_P2P_TRADE);
+        this._p1.socket.removeAllListeners(NETMSG_REJECT_P2P_TRADE);
+        this._p1.socket.removeAllListeners(NETMSG_P2P_TRADE_ADD_ITEM);
+        this._p1.socket.removeAllListeners(NETMSG_P2P_TRADE_RM_ITEM);
+        this._p1.socket.removeAllListeners(NETMSG_ACCEPT_P2P_TRADE);
+        this._p1.socket.removeAllListeners(NETMSG_CANCEL_P2P_TRADE);
+
+        this._p2.socket.removeAllListeners(NETMSG_START_P2P_TRADE);
+        this._p2.socket.removeAllListeners(NETMSG_REJECT_P2P_TRADE);
+        this._p2.socket.removeAllListeners(NETMSG_P2P_TRADE_ADD_ITEM);
+        this._p2.socket.removeAllListeners(NETMSG_P2P_TRADE_RM_ITEM);
+        this._p2.socket.removeAllListeners(NETMSG_ACCEPT_P2P_TRADE);
+        this._p2.socket.removeAllListeners(NETMSG_CANCEL_P2P_TRADE);
     }
 }
 

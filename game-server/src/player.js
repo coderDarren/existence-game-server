@@ -79,7 +79,6 @@ class Player {
         this.__on_animation_float__ = this.__on_animation_float__.bind(this);
         this.__on_animation_bool__ = this.__on_animation_bool__.bind(this);
         this.__on_p2p_trade_request__ = this.__on_p2p_trade_request__.bind(this);
-        this.__on_p2p_trade_reject__ = this.__on_p2p_trade_reject__.bind(this);
         this.__hook__ = this.__hook__.bind(this);
 
         // player emit events
@@ -114,7 +113,6 @@ class Player {
         this._socket.on(NETMSG_PLAYER_ANIM_BOOL, this.__on_animation_bool__);
         this._socket.on(NETMSG_PLAYER_HEALTH_CHANGE, this.__on_health_change__);
         this._socket.on(NETMSG_REQUEST_P2P_TRADE, this.__on_p2p_trade_request__);
-        this._socket.on(NETMSG_REJECT_P2P_TRADE, this.__on_p2p_trade_reject__);
     }
 
     update() {
@@ -442,17 +440,17 @@ class Player {
     }
 
     __on_p2p_trade_request__(_data) {
-        const _player = this._game.getPlayer(_data.playerName);
+        const _player = this._game.getPlayerRaw(_data.message);
         if (!_player) return; // could not find player, no-op
 
         // !! TODO Check distances between players
-        // ..
+        // !! TODO Make sure players are not busy with other jobs
 
         // build trade object, which stages emitters and listeners for both players
-        // the trade object will be destroyed if trade is rejected
+        // the trade object will be disposed if trade is rejected
         this._p2pTrade = new P2PTrade(this, _player);
         // emit message to player, asking them to trade
-        _player.socket.emit(NETMSG_REQUEST_P2P_TRADE, {message: JSON.stringify({playerName:this._data.name})});
+        _player.socket.emit(NETMSG_REQUEST_P2P_TRADE, {message: this._data.name});
     }
 
     __send_message_to_nearby_players__(_evt, _msg, _includeThisPlayer) {
@@ -468,6 +466,15 @@ class Player {
                 message: JSON.stringify(_msg)
             });
         }
+    }
+    
+    addInventory(_item) {
+        this.__add_inventory__({id: _item.def.id, level: _item.def.level});
+    }
+
+    rmInventory(_item) {
+        console.log(`Removing item ${JSON.stringify({itemID: _item.def.id, loc: _item.def.slotLoc})}`)
+        this.__remove_inventory__({itemID: _item.def.id, loc: _item.def.slotLoc});
     }
     
     get data() { return this._data; }
