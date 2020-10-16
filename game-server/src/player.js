@@ -39,7 +39,7 @@ const NETMSG_TRADE_SHOP_SUCCESS = 'NETMSG_TRADE_SHOP_SUCCESS';
 const NETMSG_PLAYER_ANIM_FLOAT = 'NETMSG_PLAYER_ANIM_FLOAT';
 const NETMSG_PLAYER_ANIM_BOOL = 'NETMSG_PLAYER_ANIM_BOOL';
 const NETMSG_REQUEST_P2P_TRADE = 'REQUEST_P2P_TRADE';
-const NETMSG_REJECT_P2P_TRADE = 'REJECT_P2P_TRADE';
+const NETMSG_TIX_CHANGED = 'NETMSG_TIX_CHANGED';
 
 class Player {
     
@@ -475,6 +475,14 @@ class Player {
     rmInventory(_item) {
         console.log(`Removing item ${JSON.stringify({itemID: _item.def.id, loc: _item.def.slotLoc})}`)
         this.__remove_inventory__({itemID: _item.def.id, loc: _item.def.slotLoc});
+    }
+
+    async addTix(_tix) {
+        const _tixUpdate = await this.__update_player__({tix: this._data.tix + _tix}, 'tix');
+        if (_tixUpdate != null) {
+            this._data.tix = _tixUpdate.tix;
+        }
+        this._socket.emit(NETMSG_TIX_CHANGED, {message:this._data.tix.toString()});
     }
     
     get data() { return this._data; }
