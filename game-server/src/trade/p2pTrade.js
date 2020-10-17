@@ -194,17 +194,12 @@ class P2PTrade {
             _o.giveItems(_p.player);
 
             if (_p.tix > _o.tix) {
-                _o.tix = 0;
                 _p.tix -= _o.tix;
+                _p.giveTix(_o.player);
             } else if (_o.tix > _p.tix) {
                 _o.tix -= _p.tix;
-                _p.tix = 0;
-            } else if (_o.tix == _p.tix) {
-                _o.tix = 0;
-                _p.tix = 0;
+                _o.giveTix(_p.player);
             }
-            _p.giveTix(_o.player);
-            _o.giveTix(_p.player);
         }
 
         _p.socket.emit(NETMSG_ACCEPT_P2P_TRADE, this.__netEvt__({playersAccepted: _playersAccepted}));
