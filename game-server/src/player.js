@@ -1,5 +1,6 @@
 'use strict';
 const API = require('./util/api.js');
+const P2PTrade = require('./trade/p2pTrade.js');
 const {Vector3, LowPrecisionSimpleVector3} = require('./util/vector.js');
 const {filter} = require('lodash');
 const {accumulate} = require('./util/func.js');
@@ -37,6 +38,8 @@ const NETMSG_TRADE_SHOP = 'NETMSG_TRADE_SHOP';
 const NETMSG_TRADE_SHOP_SUCCESS = 'NETMSG_TRADE_SHOP_SUCCESS';
 const NETMSG_PLAYER_ANIM_FLOAT = 'NETMSG_PLAYER_ANIM_FLOAT';
 const NETMSG_PLAYER_ANIM_BOOL = 'NETMSG_PLAYER_ANIM_BOOL';
+const NETMSG_REQUEST_P2P_TRADE = 'REQUEST_P2P_TRADE';
+const NETMSG_TIX_CHANGED = 'NETMSG_TIX_CHANGED';
 
 class Player {
     
@@ -75,6 +78,7 @@ class Player {
         this.__add_inventory__ = this.__add_inventory__.bind(this);
         this.__on_animation_float__ = this.__on_animation_float__.bind(this);
         this.__on_animation_bool__ = this.__on_animation_bool__.bind(this);
+        this.__on_p2p_trade_request__ = this.__on_p2p_trade_request__.bind(this);
         this.__hook__ = this.__hook__.bind(this);
 
         // player emit events
@@ -108,6 +112,7 @@ class Player {
         this._socket.on(NETMSG_PLAYER_ANIM_FLOAT, this.__on_animation_float__);
         this._socket.on(NETMSG_PLAYER_ANIM_BOOL, this.__on_animation_bool__);
         this._socket.on(NETMSG_PLAYER_HEALTH_CHANGE, this.__on_health_change__);
+        this._socket.on(NETMSG_REQUEST_P2P_TRADE, this.__on_p2p_trade_request__);
     }
 
     update() {
@@ -434,6 +439,20 @@ class Player {
         });
     }
 
+    __on_p2p_trade_request__(_data) {
+        const _player = this._game.getPlayerRaw(_data.message);
+        if (!_player) return; // could not find player, no-op
+
+        // !! TODO Check distances between players
+        // !! TODO Make sure players are not busy with other jobs
+
+        // build trade object, which stages emitters and listeners for both players
+        // the trade object will be disposed if trade is rejected
+        this._p2pTrade = new P2PTrade(this, _player);
+        // emit message to player, asking them to trade
+        _player.socket.emit(NETMSG_REQUEST_P2P_TRADE, {message: this._data.name});
+    }
+
     __send_message_to_nearby_players__(_evt, _msg, _includeThisPlayer) {
         const _nearbyPlayers = this._game.scanNearbyPlayerSockets(this._data.transform.pos, 50);
         for (var i in _nearbyPlayers) {
@@ -447,6 +466,23 @@ class Player {
                 message: JSON.stringify(_msg)
             });
         }
+    }
+    
+    addInventory(_item) {
+        this.__add_inventory__({id: _item.def.id, level: _item.def.level});
+    }
+
+    rmInventory(_item) {
+        console.log(`Removing item ${JSON.stringify({itemID: _item.def.id, loc: _item.def.slotLoc})}`)
+        this.__remove_inventory__({itemID: _item.def.id, loc: _item.def.slotLoc});
+    }
+
+    async addTix(_tix) {
+        const _tixUpdate = await this.__update_player__({tix: this._data.tix + _tix}, 'tix');
+        if (_tixUpdate != null) {
+            this._data.tix = _tixUpdate.tix;
+        }
+        this._socket.emit(NETMSG_TIX_CHANGED, {message:this._data.tix.toString()});
     }
     
     get data() { return this._data; }
