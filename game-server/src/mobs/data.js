@@ -154,8 +154,8 @@ const droid = function(_level, _pos, _rot) {
         healDelta: 50,
         runSpeed: 2,
         lootTime: 120, // 2 minutes
-        minDamage: 1*_level,
-        maxDamage: 2*_level,
+        minDamage: 0.01*_level,
+        maxDamage: 0.01*_level,
         hitRate: 0.75,
         // !! TODO
         // Create mob actions initializer

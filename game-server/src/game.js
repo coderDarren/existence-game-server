@@ -1,6 +1,6 @@
 'use strict';
 const Player = require('./player.js');
-const {GameScene, PathfindingTestScene} = require('./scenes/scenes.js');
+const {GameScene, StationScene} = require('./scenes/scenes.js');
 const crypto = require('crypto');
 const API = require('./util/api.js');
 const {filter,findIndex, find, map} = require('lodash');
@@ -26,7 +26,9 @@ class Game
         this._dt = Date.now() - this._lastFrameTime;
 
         // use a variable to store all players connected to the game
-        this._scene = GameScene(this);
+        // Here we initialize the scene that should be loaded for this game server
+        // The scene object loads in mobs, waypoint graphs, and shop terminals
+        this._scene = StationScene(this);
         this._players = [];
         this._mobs = this._scene.mobs;
 
