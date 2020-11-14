@@ -68,6 +68,19 @@ class API {
         const _res = await this._rest.postData(`${this._apiUrl}modifyElement`, _params);
         return _res;
     }
+
+    async getPlayerMissions(_data) {
+        try {
+            const _missions = await this._rest.get(`${this._apiUrl}getPlayerMissions?player=${_data.player}`);
+            if (_missions.statusCode != 200) {
+                return [];
+            }
+            return JSON.parse(_missions.message);
+        } catch (_err) {
+            console.log(_err);
+            return [];
+        }
+    }
 }
 
 module.exports = new API();

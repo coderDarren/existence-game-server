@@ -40,6 +40,8 @@ const NETMSG_PLAYER_ANIM_FLOAT = 'NETMSG_PLAYER_ANIM_FLOAT';
 const NETMSG_PLAYER_ANIM_BOOL = 'NETMSG_PLAYER_ANIM_BOOL';
 const NETMSG_REQUEST_P2P_TRADE = 'REQUEST_P2P_TRADE';
 const NETMSG_TIX_CHANGED = 'NETMSG_TIX_CHANGED';
+const NETMSG_MISSION_INTERACT = 'NETMSG_MISSION_INTERACT';
+const NETMSG_MISSION_DATA = 'NETMSG_MISSION_DATA';
 
 class Player {
     
@@ -56,6 +58,7 @@ class Player {
         this._nearbyMobsState = {};
         this._nearbyPlayers = [];
         this._nearbyPlayersState = {};
+        this._missions = []; // load missions in
         this._dead = false;
 
         // these values help us determine if the player is stationary or not
@@ -79,6 +82,7 @@ class Player {
         this.__on_animation_float__ = this.__on_animation_float__.bind(this);
         this.__on_animation_bool__ = this.__on_animation_bool__.bind(this);
         this.__on_p2p_trade_request__ = this.__on_p2p_trade_request__.bind(this);
+        this.__on_mission_interact__ = this.__on_mission_interact__.bind(this);
         this.__hook__ = this.__hook__.bind(this);
 
         // player emit events
@@ -99,7 +103,8 @@ class Player {
         this.__hook__();
     }
 
-    __hook__() {
+    async __hook__() {
+        // subscribe to network events
         this._socket.on(NETMSG_PLAYER_TRANSFORM_CHANGE, this.__on_transform_updated__);
         this._socket.on(NETMSG_HIT_MOB, this.__on_player_hit_mob__)
         this._socket.on(NETMSG_INVENTORY_CHANGED, this.__on_inventory_change__);
@@ -113,6 +118,11 @@ class Player {
         this._socket.on(NETMSG_PLAYER_ANIM_BOOL, this.__on_animation_bool__);
         this._socket.on(NETMSG_PLAYER_HEALTH_CHANGE, this.__on_health_change__);
         this._socket.on(NETMSG_REQUEST_P2P_TRADE, this.__on_p2p_trade_request__);
+        this._socket.on(NETMSG_MISSION_INTERACT, this.__on_mission_interact__);
+        
+        // collecting server data
+        this._missions = await API.getPlayerMissions({player:this._data.name});
+        console.log(`Found missions for ${this.data.name}: ${JSON.stringify(this._missions)}`);
     }
 
     update() {
@@ -451,6 +461,10 @@ class Player {
         this._p2pTrade = new P2PTrade(this, _player);
         // emit message to player, asking them to trade
         _player.socket.emit(NETMSG_REQUEST_P2P_TRADE, {message: this._data.name});
+    }
+
+    __on_mission_interact__(_data) {
+
     }
 
     __send_message_to_nearby_players__(_evt, _msg, _includeThisPlayer) {
