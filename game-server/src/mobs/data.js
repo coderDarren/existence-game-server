@@ -65,7 +65,7 @@ const gastarias = function(_level, _pos, _rot) {
         attackRange: 2,
         inCombat: false,
         inAttackRange: false,
-        respawnTime: 120, // in seconds
+        respawnTime: 10, // in seconds
         xpReward: 25*_level,
         xpRewardVariance: 10*_level,
         transform: {
@@ -104,7 +104,7 @@ const gastarid = function(_level, _pos, _rot) {
         attackRange: 2,
         inCombat: false,
         inAttackRange: false,
-        respawnTime: 120, // in seconds
+        respawnTime: 10, // in seconds
         xpReward: 25*_level,
         xpRewardVariance: 10*_level,
         transform: {
