@@ -46,6 +46,84 @@ const a0zix = function(_level, _pos, _rot) {
     }
 }
 
+const gastarias = function(_level, _pos, _rot) {
+    const _id = crypto.randomBytes(5).toString('hex');
+    _rot.y = Math.random() * 360;
+    
+    return {
+        id: _id,
+        name: 'Gastarias',
+        level: _level,
+        maxHealth: 5*_level,
+        health: 5*_level,
+        maxEnergy: 5*_level,
+        energy: 5*_level,
+        attackSpeed: 1,
+        rechargeSpeed: 1.5,
+        aggroRange: 5,
+        retreatRange: 50,
+        attackRange: 2,
+        inCombat: false,
+        inAttackRange: false,
+        respawnTime: 120, // in seconds
+        xpReward: 25*_level,
+        xpRewardVariance: 10*_level,
+        transform: {
+            pos: new Vector3(_pos).obj,
+            rot: new Vector3(_rot).obj
+        },
+        inCombat: false,
+        healDelta: 50,
+        runSpeed: 3,
+        lootTime: 120, // 2 minutes
+        minDamage: 1*_level,
+        maxDamage: 3*_level,
+        hitRate: 0.75,
+        // !! TODO
+        // Create mob actions initializer
+        actions: []
+    }
+}
+
+const gastarid = function(_level, _pos, _rot) {
+    const _id = crypto.randomBytes(5).toString('hex');
+    _rot.y = Math.random() * 360;
+    
+    return {
+        id: _id,
+        name: 'Gastarid',
+        level: _level,
+        maxHealth: 7*_level,
+        health: 7*_level,
+        maxEnergy: 7*_level,
+        energy: 7*_level,
+        attackSpeed: 1,
+        rechargeSpeed: 1.5,
+        aggroRange: 5,
+        retreatRange: 50,
+        attackRange: 2,
+        inCombat: false,
+        inAttackRange: false,
+        respawnTime: 120, // in seconds
+        xpReward: 25*_level,
+        xpRewardVariance: 10*_level,
+        transform: {
+            pos: new Vector3(_pos).obj,
+            rot: new Vector3(_rot).obj
+        },
+        inCombat: false,
+        healDelta: 50,
+        runSpeed: 3,
+        lootTime: 120, // 2 minutes
+        minDamage: 2*_level,
+        maxDamage: 4*_level,
+        hitRate: 0.75,
+        // !! TODO
+        // Create mob actions initializer
+        actions: []
+    }
+}
+
 const toxicA0zix = function(_level, _pos, _rot) {
     const _id = crypto.randomBytes(5).toString('hex');
     _rot.y = Math.random() * 360;
@@ -207,5 +285,7 @@ module.exports = {
     enragedA0Zix,
     toxicA0zix,
     droid,
-    enragedDroid
+    enragedDroid,
+    gastarias,
+    gastarid
 }
