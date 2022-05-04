@@ -8,7 +8,9 @@ const ShopTerminal = require('../shops/shopTerminal.js');
 
 // Import the mob data objects that will live in this scene
 const {
-    droid
+    droid,
+    gastarias,
+    gastarid
 } = require('../mobs/data.js');
 
 const waypointGraph = {"waypoints":[]}
@@ -21,6 +23,12 @@ module.exports = (_game) => {
         // Check the mob data for more control params ../mobs/data.js
         [
             new Mob(_game, droid(100, {x:-66,y:-0.9292164,z:30.81234}, {x:0,y:0,z:0})),
+            new Mob(_game, gastarias(1, {x:-8.7,y:-0.9292164,z:-22}, {x:0,y:0,z:0})),
+            new Mob(_game, gastarias(1, {x:-7,y:-0.9292164,z:-26.2}, {x:0,y:45,z:0})),
+            new Mob(_game, gastarias(1, {x:-13,y:-0.9292164,z:-17.2}, {x:0,y:90,z:0})),
+            new Mob(_game, gastarid(3, {x:-9.6,y:-0.9292164,z:1.2}, {x:0,y:180,z:0})),
+            new Mob(_game, gastarid(3, {x:-15,y:-0.9292164,z:-7}, {x:0,y:-90,z:0})),
+            new Mob(_game, gastarid(3, {x:-15,y:-0.9292164,z:1.2}, {x:0,y:180,z:0})),
         ],
         // The waypoint graph is empty, see above declaration. Waypoint graphs are temporarily deprecated
         waypointGraph,

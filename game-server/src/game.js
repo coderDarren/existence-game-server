@@ -183,6 +183,7 @@ class Game
         for (var i = 0; i < this._mobs.length; i++) {
             this._mobs[i].update();
         }
+        
     }
 
     __update_players__() {
