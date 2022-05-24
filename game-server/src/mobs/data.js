@@ -221,7 +221,7 @@ const droid = function(_level, _pos, _rot) {
         attackRange: 5,
         inCombat: false,
         inAttackRange: false,
-        respawnTime: 120, // in seconds
+        respawnTime: 5, // in seconds
         xpReward: 50*_level,
         xpRewardVariance: 10*_level,
         transform: {
